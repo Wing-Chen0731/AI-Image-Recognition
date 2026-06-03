@@ -1,0 +1,1 @@
+print("test.py 里的 __name__ 是：", __name__)
