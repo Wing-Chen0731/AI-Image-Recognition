@@ -21,13 +21,22 @@ AI-Image-Recognition/
     transforms.py           # Train/validation preprocessing
     compare_inference.py    # Pretrained vs fine-tuned inference comparison
     classifier.py           # Original ImageNet inference script
+    web_app.py              # Flask web interface for upload-and-predict
     exceptions.py           # Custom exceptions
   courseware/
+    lesson6_web_integration.md
+    lesson6_student_practice.md
     lesson4_latest_finetuning.md
     lesson4_student_practice.md
   data/
-    train/
-    val/
+    images/
+    oxford_pet_split/
+      train/
+      val/
+  templates/
+    index.html
+  static/
+    uploads/
   images/
     cat.jpg
   requirements.txt
@@ -55,7 +64,7 @@ If PyTorch installation fails or you need GPU-specific packages, install PyTorch
 The dataset must follow the `ImageFolder` structure:
 
 ```text
-data/
+data/oxford_pet_split/
   train/
     cat/
     dog/
@@ -64,14 +73,20 @@ data/
     dog/
 ```
 
-Folder names are used as class labels. For example, `cat` is one class and `dog` is another class.
+Folder names are used as class labels. The Oxford-IIIT Pet split generated in this workspace contains 37 class folders under both `train` and `val`.
+
+To recreate the split from the original Oxford-IIIT `images` folder:
+
+```bash
+python scripts/split_oxford_pet.py --images-dir data/images --output-dir data/oxford_pet_split --val-ratio 0.2 --seed 42 --overwrite
+```
 
 ## Train for One Epoch
 
 Use one epoch first to verify that the environment, dataset, and model can run end to end:
 
 ```bash
-python app/finetune.py --data-dir data --epochs 1 --batch-size 16 --num-workers 0
+python app/finetune.py --data-dir data/oxford_pet_split --epochs 1 --batch-size 16 --num-workers 0
 ```
 
 ## Train for Three Epochs
@@ -79,7 +94,7 @@ python app/finetune.py --data-dir data --epochs 1 --batch-size 16 --num-workers 
 After the one-epoch check passes, run a normal classroom fine-tuning job:
 
 ```bash
-python app/finetune.py --data-dir data --epochs 3 --batch-size 16 --num-workers 0
+python app/finetune.py --data-dir data/oxford_pet_split --epochs 3 --batch-size 16 --num-workers 0
 ```
 
 The trained weights are saved as:
@@ -102,7 +117,22 @@ The script uses:
 
 - `images/cat.jpg` as the default test image.
 - `finetuned_mobilenet.pth` as the fine-tuned model.
-- `data/train` folder names as custom class names.
+- `data/oxford_pet_split/train` folder names as custom class names.
+
+## Run the Flask Web UI
+
+After installing Flask, start the upload-and-predict app:
+
+```bash
+python app/web_app.py
+```
+
+The Web UI uses:
+
+- `app/web_app.py` as the Flask entry point.
+- `templates/index.html` as the upload page.
+- `static/uploads/` as the temporary image storage directory.
+- `models/oxford_pet_mobilenet_epoch1.pth` as the default fine-tuned checkpoint.
 
 ## Classroom Script vs Engineering Script
 

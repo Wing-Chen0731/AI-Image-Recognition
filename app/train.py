@@ -2,7 +2,7 @@
 
 Expected dataset layout:
 
-data/
+data/oxford_pet_split/
   train/
     cat/
     dog/
@@ -11,7 +11,7 @@ data/
     dog/
 
 Run from the repository root:
-    python app/train.py --data-dir data --epochs 3
+    python app/train.py --data-dir data/oxford_pet_split --epochs 3
 """
 
 from __future__ import annotations
@@ -110,7 +110,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Fine-tune MobileNetV3 on an ImageFolder dataset."
     )
-    parser.add_argument("--data-dir", default="data", help="Dataset root directory.")
+    parser.add_argument(
+        "--data-dir",
+        default="data/oxford_pet_split",
+        help="Dataset root directory with train and val folders.",
+    )
     parser.add_argument("--epochs", type=int, default=3, help="Number of epochs.")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
     parser.add_argument("--lr", type=float, default=1e-3, help="Adam learning rate.")

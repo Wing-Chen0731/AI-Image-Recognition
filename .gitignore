@@ -15,6 +15,18 @@ pytorch_env/
 *.pt
 *.onnx
 
+data/images/
+data/oxford_pet_split/
+data/train/
+data/val/
+data/*.csv
+
+models/
+static/uploads/*
+!static/uploads/.gitkeep
+
+courseware/~$*.docx
+
 .DS_Store
 Thumbs.db
 

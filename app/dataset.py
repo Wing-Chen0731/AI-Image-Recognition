@@ -88,12 +88,12 @@ def build_image_folder(
 
 
 def create_dataloaders(
-    data_dir: str | Path = "data",
+    data_dir: str | Path = "data/oxford_pet_split",
     batch_size: int = 16,
     num_workers: int = 0,
     image_size: int = 224,
 ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
-    """Create train/validation loaders for a data/train and data/val layout."""
+    """Create train/validation loaders for an ImageFolder train/val layout."""
 
     root = Path(data_dir)
     train_dataset = build_image_folder(
@@ -120,8 +120,8 @@ def create_dataloaders(
     return train_loader, val_loader, train_dataset.class_to_idx
 
 
-def count_classes(data_dir: str | Path = "data") -> int:
-    """Return the number of classes in data/train."""
+def count_classes(data_dir: str | Path = "data/oxford_pet_split") -> int:
+    """Return the number of classes in the training split."""
 
     train_dir = Path(data_dir) / "train"
     validate_split_dir(train_dir)

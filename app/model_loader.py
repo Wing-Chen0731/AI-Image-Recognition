@@ -9,7 +9,9 @@ CPSC 210 mapping:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 
+import torch
 import torch.nn as nn
 
 try:
@@ -58,6 +60,45 @@ class ResNet18Loader(ModelLoader):
             model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         except Exception as exc:
             raise ModelDownloadError(f"Failed to load ResNet-18 weights: {exc}") from exc
+
+        model.eval()
+        return model
+
+
+class FineTunedLoader(ModelLoader):
+    """Load a fine-tuned MobileNetV3 checkpoint for a custom class set."""
+
+    def __init__(
+        self,
+        model_path: str | Path,
+        num_classes: int,
+        freeze_features: bool = True,
+    ) -> None:
+        self.model_path = Path(model_path)
+        self.num_classes = num_classes
+        self.freeze_features = freeze_features
+
+    def load_model(self) -> nn.Module:
+        if not self.model_path.exists():
+            raise ModelDownloadError(f"Fine-tuned model not found: {self.model_path}")
+
+        model = build_finetune_model(
+            num_classes=self.num_classes,
+            freeze_features=self.freeze_features,
+        )
+
+        try:
+            try:
+                state_dict = torch.load(
+                    self.model_path, map_location="cpu", weights_only=True
+                )
+            except TypeError:  # Older PyTorch versions do not support weights_only.
+                state_dict = torch.load(self.model_path, map_location="cpu")
+            model.load_state_dict(state_dict)
+        except Exception as exc:
+            raise ModelDownloadError(
+                f"Failed to load fine-tuned model from {self.model_path}: {exc}"
+            ) from exc
 
         model.eval()
         return model

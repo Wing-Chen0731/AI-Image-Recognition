@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 图像识别系统</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #18202b;
+      --muted: #5f6b7a;
+      --line: #dbe2ea;
+      --accent: #1f6feb;
+      --accent-soft: #e8f1ff;
+      --danger: #c62828;
+      --shadow: 0 10px 24px rgba(24, 32, 43, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .page {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 32px 20px 40px;
+    }
+    .masthead {
+      margin-bottom: 20px;
+    }
+    .masthead h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .dropzone {
+      border: 2px dashed var(--line);
+      border-radius: 10px;
+      background: #fcfdff;
+      padding: 28px 18px;
+      text-align: center;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      cursor: pointer;
+      min-height: 210px;
+      display: grid;
+      place-items: center;
+    }
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .dropzone strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+    .dropzone p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    #file-input {
+      display: none;
+    }
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .button {
+      appearance: none;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 11px 16px;
+      cursor: pointer;
+    }
+    .button.secondary {
+      background: #e9edf3;
+      color: var(--text);
+    }
+    .preview {
+      margin-top: 16px;
+      display: none;
+      width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .status {
+      margin-top: 16px;
+      min-height: 28px;
+      color: var(--muted);
+    }
+    .status.loading { color: var(--accent); }
+    .status.error { color: var(--danger); }
+    .results {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .result {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: grid;
+      gap: 8px;
+    }
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      font-size: 14px;
+    }
+    .result-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #eef2f7;
+      overflow: hidden;
+    }
+    .result-bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #1f6feb, #4f8dff);
+    }
+    .side-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .thumb {
+      margin-top: 14px;
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <h1>AI 图像识别系统</h1>
+      <div class="meta">
+        数据集：{{ data_root }} · 类别数：{{ class_count }} · 模型：{{ model_path }}
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <div id="dropzone" class="dropzone">
+          <div>
+            <strong>拖拽图片到这里，或点击选择</strong>
+            <p>支持 JPG、PNG 等常见图片格式。上传后会自动预览并开始识别。</p>
+          </div>
+        </div>
+        <input id="file-input" type="file" accept="image/*" />
+        <div class="actions">
+          <button id="choose-btn" class="button" type="button">选择图片</button>
+          <button id="clear-btn" class="button secondary" type="button">清空</button>
+        </div>
+        <img id="preview" class="preview" alt="图片预览" />
+        <div id="status" class="status"></div>
+        <div id="results" class="results"></div>
+      </section>
+
+      <aside class="panel">
+        <h2 style="margin: 0 0 12px; font-size: 18px;">本课识别流程</h2>
+        <ol class="side-list">
+          <li>上传图片到 Web 页面。</li>
+          <li>前端显示预览并发起 `/predict` 请求。</li>
+          <li>后端完成预处理、模型推理和结果排序。</li>
+          <li>前端渲染 Top-3 结果和置信度条。</li>
+        </ol>
+        <div class="footer-note">
+          这套页面保持了纯 HTML + CSS + 原生 JavaScript 的实现方式，便于课堂讲解路由、状态和前后端联调。
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const chooseBtn = document.getElementById('choose-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const preview = document.getElementById('preview');
+    const statusBox = document.getElementById('status');
+    const resultsBox = document.getElementById('results');
+
+    chooseBtn.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    });
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    });
+    clearBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+      statusBox.textContent = '';
+      statusBox.className = 'status';
+      resultsBox.innerHTML = '';
+    });
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        preview.src = event.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      uploadFile(file);
+    }
+
+    function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      statusBox.textContent = '识别中...';
+      statusBox.className = 'status loading';
+      resultsBox.innerHTML = '';
+
+      fetch('/predict', {
+        method: 'POST',
+        body: formData
+      })
+      .then((response) => response.json().then((payload) => ({ ok: response.ok, payload })))
+      .then(({ ok, payload }) => {
+        if (!ok || payload.error) {
+          statusBox.textContent = payload.error || '识别失败';
+          statusBox.className = 'status error';
+          return;
+        }
+
+        statusBox.textContent = '识别完成';
+        statusBox.className = 'status';
+        resultsBox.innerHTML = payload.results.map((item, index) => {
+          const percent = Math.max(0, Math.min(100, item.score));
+          return `
+            <div class="result">
+              <div class="result-head">
+                <strong>${index + 1}. ${item.label}</strong>
+                <span>${percent.toFixed(2)}%</span>
+              </div>
+              <div class="result-bar"><span style="width:${percent}%"></span></div>
+            </div>
+          `;
+        }).join('');
+      })
+      .catch((error) => {
+        statusBox.textContent = `请求失败：${error.message}`;
+        statusBox.className = 'status error';
+      });
+    }
+  </script>
+</body>
+</html>

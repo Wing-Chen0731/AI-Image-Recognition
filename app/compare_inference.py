@@ -14,6 +14,7 @@ This script prints:
 from __future__ import annotations
 
 import os
+import argparse
 from pathlib import Path
 from typing import List, Sequence, Tuple
 
@@ -23,15 +24,15 @@ from PIL import Image
 from torchvision import transforms
 
 try:
-    from app.model_loader import MobileNetV3Loader, build_finetune_model
+    from app.model_loader import FineTunedLoader, MobileNetV3Loader
 except ModuleNotFoundError:  # Allows: python app/compare_inference.py
-    from model_loader import MobileNetV3Loader, build_finetune_model
+    from model_loader import FineTunedLoader, MobileNetV3Loader
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_IMAGE = PROJECT_ROOT / "images" / "cat.jpg"
 DEFAULT_MODEL = PROJECT_ROOT / "finetuned_mobilenet.pth"
-DEFAULT_DATA_DIR = PROJECT_ROOT / "data"
+DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "oxford_pet_split"
 
 
 def load_image(image_path: Path) -> torch.Tensor:
@@ -87,10 +88,8 @@ def predict_finetuned(image_tensor: torch.Tensor, model_path: Path, data_dir: Pa
     except Exception as exc:
         raise RuntimeError(f"Unable to read class names from {data_dir / 'train'}: {exc}") from exc
 
-    model = build_finetune_model(num_classes=len(class_names), freeze_features=True)
-    state_dict = torch.load(model_path, map_location="cpu")
-    model.load_state_dict(state_dict)
-    model.eval()
+    loader = FineTunedLoader(model_path, num_classes=len(class_names))
+    model = loader.load_model()
 
     with torch.no_grad():
         logits = model(image_tensor)
@@ -106,10 +105,21 @@ def print_block(title: str, rows: Sequence[Tuple[str, float]]) -> None:
         print(f"{idx}. {label:30s} {score:6.2f}%")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Compare ImageNet and fine-tuned MobileNetV3 predictions."
+    )
+    parser.add_argument("--image", type=Path, default=DEFAULT_IMAGE)
+    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
+    parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
+    return parser.parse_args()
+
+
 def main() -> None:
-    image_path = DEFAULT_IMAGE
-    model_path = DEFAULT_MODEL
-    data_dir = DEFAULT_DATA_DIR
+    args = parse_args()
+    image_path = args.image
+    model_path = args.model
+    data_dir = args.data_dir
 
     if not image_path.exists():
         raise FileNotFoundError(f"Default image missing: {image_path}")

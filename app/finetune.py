@@ -1,7 +1,7 @@
 """Complete MobileNetV3 fine-tuning script for Lesson 4.
 
 Run from the repository root:
-    python app/finetune.py --data-dir data --epochs 3
+    python app/finetune.py --data-dir data/oxford_pet_split --epochs 3
 """
 
 from __future__ import annotations
@@ -119,7 +119,11 @@ def validate_epoch(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Fine-tune MobileNetV3.")
-    parser.add_argument("--data-dir", default="data", help="Dataset root directory.")
+    parser.add_argument(
+        "--data-dir",
+        default="data/oxford_pet_split",
+        help="Dataset root directory with train and val folders.",
+    )
     parser.add_argument("--epochs", type=int, default=3, help="Training epochs.")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
     parser.add_argument("--lr", type=float, default=1e-3, help="Adam learning rate.")
@@ -128,7 +132,7 @@ def parse_args() -> argparse.Namespace:
         "--num-classes",
         type=int,
         default=None,
-        help="Expected class count. Defaults to the number found in data/train.",
+        help="Expected class count. Defaults to the number found in the training split.",
     )
     parser.add_argument(
         "--output",
