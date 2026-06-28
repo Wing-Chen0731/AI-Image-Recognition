@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <defs>
+    <style>
+      .bg { fill: #f6f7fb; }
+      .title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 38px; font-weight: 800; fill: #18202b; }
+      .subtitle { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 20px; fill: #5f6b7a; }
+      .stage-title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 22px; font-weight: 800; fill: #ffffff; }
+      .stage-sub { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 15px; fill: rgba(255,255,255,0.9); }
+      .detail-title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 18px; font-weight: 800; fill: #18202b; }
+      .detail { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 15px; fill: #3a4655; }
+      .hint { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 16px; fill: #5f6b7a; }
+      .note-title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 20px; font-weight: 800; fill: #0f5132; }
+      .note { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 16px; fill: #1f513d; }
+      .card { fill: #ffffff; stroke: #dbe2ea; stroke-width: 2; filter: url(#shadow); }
+      .small-card { fill: #ffffff; stroke: #dbe2ea; stroke-width: 1.5; }
+      .pill { fill: #eef2f7; }
+      .line { stroke: #b8c5d6; stroke-width: 4; fill: none; stroke-linecap: round; }
+      .arrow { fill: #8fa1b8; }
+      .blue { fill: #1f6feb; }
+      .cyan { fill: #0e7490; }
+      .green { fill: #18864b; }
+      .gold { fill: #b7791f; }
+      .purple { fill: #6d5bd0; }
+      .red { fill: #c2410c; }
+      .slate { fill: #344054; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#18202b" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="arrow"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="980"/>
+
+  <text x="80" y="82" class="title">AI 图像识别项目：从数据到 Web 系统</text>
+  <text x="80" y="118" class="subtitle">按学习顺序理解：先知道每一层在做什么，再判断效果不好时该调哪一层。</text>
+
+  <path class="line" marker-end="url(#arrow)" d="M 220 250 C 350 250, 350 250, 480 250"/>
+  <path class="line" marker-end="url(#arrow)" d="M 620 250 C 750 250, 750 250, 880 250"/>
+  <path class="line" marker-end="url(#arrow)" d="M 1020 250 C 1150 250, 1150 250, 1280 250"/>
+  <path class="line" marker-end="url(#arrow)" d="M 1360 330 C 1360 430, 1220 430, 1020 430"/>
+  <path class="line" marker-end="url(#arrow)" d="M 880 430 C 750 430, 750 430, 620 430"/>
+  <path class="line" marker-end="url(#arrow)" d="M 480 430 C 350 430, 350 430, 220 430"/>
+
+  <g transform="translate(80 180)">
+    <rect width="280" height="140" rx="22" class="blue"/>
+    <text x="28" y="45" class="stage-title">1. 数据</text>
+    <text x="28" y="78" class="stage-sub">图片和标签</text>
+    <text x="28" y="106" class="stage-sub">train / val / 类别文件夹</text>
+  </g>
+
+  <g transform="translate(480 180)">
+    <rect width="280" height="140" rx="22" class="cyan"/>
+    <text x="28" y="45" class="stage-title">2. 模型</text>
+    <text x="28" y="78" class="stage-sub">MobileNetV3 / YOLOv8</text>
+    <text x="28" y="106" class="stage-sub">预训练模型 + 任务头</text>
+  </g>
+
+  <g transform="translate(880 180)">
+    <rect width="280" height="140" rx="22" class="green"/>
+    <text x="28" y="45" class="stage-title">3. 训练</text>
+    <text x="28" y="78" class="stage-sub">让模型学习</text>
+    <text x="28" y="106" class="stage-sub">epoch / batch / learning rate</text>
+  </g>
+
+  <g transform="translate(1280 180)">
+    <rect width="240" height="140" rx="22" class="gold"/>
+    <text x="28" y="45" class="stage-title">4. 评估</text>
+    <text x="28" y="78" class="stage-sub">看效果好不好</text>
+    <text x="28" y="106" class="stage-sub">loss / accuracy / 置信度</text>
+  </g>
+
+  <g transform="translate(880 360)">
+    <rect width="280" height="140" rx="22" class="purple"/>
+    <text x="28" y="45" class="stage-title">5. 调优</text>
+    <text x="28" y="78" class="stage-sub">针对问题改进</text>
+    <text x="28" y="106" class="stage-sub">数据 / 模型 / 参数 / 推理</text>
+  </g>
+
+  <g transform="translate(480 360)">
+    <rect width="280" height="140" rx="22" class="red"/>
+    <text x="28" y="45" class="stage-title">6. 推理</text>
+    <text x="28" y="78" class="stage-sub">用训练好的模型预测</text>
+    <text x="28" y="106" class="stage-sub">Top-3 / 检测框 / 阈值</text>
+  </g>
+
+  <g transform="translate(80 360)">
+    <rect width="280" height="140" rx="22" class="slate"/>
+    <text x="28" y="45" class="stage-title">7. Web 系统</text>
+    <text x="28" y="78" class="stage-sub">Flask 页面展示结果</text>
+    <text x="28" y="106" class="stage-sub">/predict / /detect / JSON</text>
+  </g>
+
+  <rect x="80" y="560" width="1440" height="270" rx="24" class="card"/>
+  <text x="110" y="610" class="detail-title">调优到底调哪一层？</text>
+  <text x="110" y="642" class="hint">效果不好时，不要只盯着 learning rate。先判断问题属于哪一层。</text>
+
+  <g transform="translate(110 675)">
+    <rect width="250" height="110" rx="16" class="small-card"/>
+    <circle cx="26" cy="28" r="10" class="blue"/>
+    <text x="48" y="34" class="detail-title">数据调优</text>
+    <text x="24" y="66" class="detail">清洗、增强、均衡</text>
+    <text x="24" y="91" class="detail">解决：数据少、标错、不平衡</text>
+  </g>
+
+  <g transform="translate(390 675)">
+    <rect width="250" height="110" rx="16" class="small-card"/>
+    <circle cx="26" cy="28" r="10" class="cyan"/>
+    <text x="48" y="34" class="detail-title">模型微调</text>
+    <text x="24" y="66" class="detail">替换分类头、冻结层</text>
+    <text x="24" y="91" class="detail">解决：模型不适应新任务</text>
+  </g>
+
+  <g transform="translate(670 675)">
+    <rect width="250" height="110" rx="16" class="small-card"/>
+    <circle cx="26" cy="28" r="10" class="green"/>
+    <text x="48" y="34" class="detail-title">超参数调优</text>
+    <text x="24" y="66" class="detail">lr、batch、epoch</text>
+    <text x="24" y="91" class="detail">解决：训练不稳、收敛慢</text>
+  </g>
+
+  <g transform="translate(950 675)">
+    <rect width="250" height="110" rx="16" class="small-card"/>
+    <circle cx="26" cy="28" r="10" class="red"/>
+    <text x="48" y="34" class="detail-title">推理调优</text>
+    <text x="24" y="66" class="detail">Top-K、conf_threshold</text>
+    <text x="24" y="91" class="detail">解决：结果太多或误检多</text>
+  </g>
+
+  <g transform="translate(1230 675)">
+    <rect width="250" height="110" rx="16" class="small-card"/>
+    <circle cx="26" cy="28" r="10" class="slate"/>
+    <text x="48" y="34" class="detail-title">系统调优</text>
+    <text x="24" y="66" class="detail">单例加载、错误处理</text>
+    <text x="24" y="91" class="detail">解决：Web 慢、接口不稳</text>
+  </g>
+
+  <rect x="80" y="858" width="1440" height="66" rx="18" fill="#e8f7ef" stroke="#b7e4ca" stroke-width="2"/>
+  <text x="110" y="898" class="note-title">一句话主线：</text>
+  <text x="260" y="898" class="note">先看数据，再看模型；先让训练跑通，再看效果；效果不好时，定位是哪一层的问题，再选择对应调优方法。</text>
+</svg>

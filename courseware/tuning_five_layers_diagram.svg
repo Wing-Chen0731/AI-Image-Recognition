@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1050" viewBox="0 0 1800 1050">
+  <defs>
+    <style>
+      .bg { fill: #f7f8fb; }
+      .title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 42px; font-weight: 800; fill: #172033; }
+      .subtitle { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 21px; fill: #667085; }
+      .root-title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 30px; font-weight: 800; fill: #ffffff; }
+      .root-sub { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 18px; fill: rgba(255,255,255,0.92); }
+      .card-title { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 24px; font-weight: 800; fill: #ffffff; }
+      .section-label { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 17px; font-weight: 800; fill: #344054; }
+      .section-text { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 17px; fill: #475467; }
+      .footer { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 19px; fill: #22543d; }
+      .footer-bold { font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 19px; font-weight: 800; fill: #0f5132; }
+      .root { fill: #172033; filter: url(#shadow); }
+      .card { fill: #ffffff; stroke: #e4e7ec; stroke-width: 2; filter: url(#softShadow); }
+      .line { stroke: #b8c5d6; stroke-width: 4; fill: none; stroke-linecap: round; }
+      .divider { stroke: #edf0f5; stroke-width: 2; }
+      .chip { fill: #f2f4f7; }
+      .blue { fill: #1f6feb; }
+      .cyan { fill: #0e7490; }
+      .green { fill: #18864b; }
+      .orange { fill: #c2410c; }
+      .purple { fill: #6d5bd0; }
+    </style>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#172033" flood-opacity="0.18"/>
+    </filter>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#172033" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#98a2b3"/>
+    </marker>
+  </defs>
+
+  <rect width="1800" height="1050" class="bg"/>
+
+  <text x="90" y="86" class="title">AI 项目调优五层关系图</text>
+  <text x="90" y="124" class="subtitle">先定位问题属于哪一层，再选择对应的调优方法。</text>
+
+  <g transform="translate(620 165)">
+    <rect x="0" y="0" width="560" height="120" rx="28" class="root"/>
+    <text x="280" y="48" text-anchor="middle" class="root-title">调优</text>
+    <text x="280" y="82" text-anchor="middle" class="root-sub">让系统效果更好，或运行更稳定</text>
+  </g>
+
+  <path d="M 900 285 L 900 352" class="line"/>
+  <path d="M 190 352 L 1610 352" class="line"/>
+  <path d="M 190 352 L 190 404" class="line" marker-end="url(#arrow)"/>
+  <path d="M 545 352 L 545 404" class="line" marker-end="url(#arrow)"/>
+  <path d="M 900 352 L 900 404" class="line" marker-end="url(#arrow)"/>
+  <path d="M 1255 352 L 1255 404" class="line" marker-end="url(#arrow)"/>
+  <path d="M 1610 352 L 1610 404" class="line" marker-end="url(#arrow)"/>
+
+  <g transform="translate(70 405)">
+    <rect width="300" height="440" rx="22" class="card"/>
+    <rect width="300" height="82" rx="22" class="blue"/>
+    <text x="150" y="51" text-anchor="middle" class="card-title">A. 数据调优</text>
+
+    <rect x="26" y="110" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="133" text-anchor="middle" class="section-label">解决</text>
+    <text x="30" y="176" class="section-text">数据质量问题</text>
+
+    <line x1="26" y1="206" x2="274" y2="206" class="divider"/>
+    <rect x="26" y="232" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="255" text-anchor="middle" class="section-label">做法</text>
+    <text x="30" y="298" class="section-text">清洗、增强</text>
+    <text x="30" y="326" class="section-text">均衡、重划分</text>
+
+    <line x1="26" y1="356" x2="274" y2="356" class="divider"/>
+    <rect x="26" y="382" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="405" text-anchor="middle" class="section-label">适用</text>
+    <text x="30" y="448" class="section-text">样本少、类别不平衡</text>
+    <text x="30" y="476" class="section-text">标注错误、图片质量差</text>
+  </g>
+
+  <g transform="translate(425 405)">
+    <rect width="300" height="440" rx="22" class="card"/>
+    <rect width="300" height="82" rx="22" class="cyan"/>
+    <text x="150" y="51" text-anchor="middle" class="card-title">B. 模型微调</text>
+
+    <rect x="26" y="110" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="133" text-anchor="middle" class="section-label">解决</text>
+    <text x="30" y="176" class="section-text">模型不适应当前任务</text>
+
+    <line x1="26" y1="206" x2="274" y2="206" class="divider"/>
+    <rect x="26" y="232" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="255" text-anchor="middle" class="section-label">做法</text>
+    <text x="30" y="298" class="section-text">替换分类头</text>
+    <text x="30" y="326" class="section-text">冻结层、解冻层</text>
+
+    <line x1="26" y1="356" x2="274" y2="356" class="divider"/>
+    <rect x="26" y="382" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="405" text-anchor="middle" class="section-label">适用</text>
+    <text x="30" y="448" class="section-text">用预训练模型</text>
+    <text x="30" y="476" class="section-text">做自己的分类任务</text>
+  </g>
+
+  <g transform="translate(780 405)">
+    <rect width="300" height="440" rx="22" class="card"/>
+    <rect width="300" height="82" rx="22" class="green"/>
+    <text x="150" y="51" text-anchor="middle" class="card-title">C. 训练超参数调优</text>
+
+    <rect x="26" y="110" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="133" text-anchor="middle" class="section-label">解决</text>
+    <text x="30" y="176" class="section-text">训练过程不稳定</text>
+
+    <line x1="26" y1="206" x2="274" y2="206" class="divider"/>
+    <rect x="26" y="232" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="255" text-anchor="middle" class="section-label">做法</text>
+    <text x="30" y="298" class="section-text">调 lr、batch</text>
+    <text x="30" y="326" class="section-text">epoch、optimizer</text>
+
+    <line x1="26" y1="356" x2="274" y2="356" class="divider"/>
+    <rect x="26" y="382" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="405" text-anchor="middle" class="section-label">适用</text>
+    <text x="30" y="448" class="section-text">loss 震荡、收敛慢</text>
+    <text x="30" y="476" class="section-text">过拟合、显存不够</text>
+  </g>
+
+  <g transform="translate(1135 405)">
+    <rect width="300" height="440" rx="22" class="card"/>
+    <rect width="300" height="82" rx="22" class="orange"/>
+    <text x="150" y="51" text-anchor="middle" class="card-title">D. 推理结果调优</text>
+
+    <rect x="26" y="110" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="133" text-anchor="middle" class="section-label">解决</text>
+    <text x="30" y="176" class="section-text">输出结果展示不合理</text>
+
+    <line x1="26" y1="206" x2="274" y2="206" class="divider"/>
+    <rect x="26" y="232" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="255" text-anchor="middle" class="section-label">做法</text>
+    <text x="30" y="298" class="section-text">Top-K</text>
+    <text x="30" y="326" class="section-text">置信度阈值</text>
+
+    <line x1="26" y1="356" x2="274" y2="356" class="divider"/>
+    <rect x="26" y="382" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="405" text-anchor="middle" class="section-label">适用</text>
+    <text x="30" y="448" class="section-text">误检多、结果太多</text>
+    <text x="30" y="476" class="section-text">需要过滤低置信度</text>
+  </g>
+
+  <g transform="translate(1490 405)">
+    <rect width="300" height="440" rx="22" class="card"/>
+    <rect width="300" height="82" rx="22" class="purple"/>
+    <text x="150" y="51" text-anchor="middle" class="card-title">E. 系统联调优化</text>
+
+    <rect x="26" y="110" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="133" text-anchor="middle" class="section-label">解决</text>
+    <text x="30" y="176" class="section-text">Web 系统慢或报错</text>
+
+    <line x1="26" y1="206" x2="274" y2="206" class="divider"/>
+    <rect x="26" y="232" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="255" text-anchor="middle" class="section-label">做法</text>
+    <text x="30" y="298" class="section-text">模型单例、错误处理</text>
+    <text x="30" y="326" class="section-text">JSON、loading 状态</text>
+
+    <line x1="26" y1="356" x2="274" y2="356" class="divider"/>
+    <rect x="26" y="382" width="86" height="34" rx="17" class="chip"/>
+    <text x="69" y="405" text-anchor="middle" class="section-label">适用</text>
+    <text x="30" y="448" class="section-text">页面慢、接口不稳</text>
+    <text x="30" y="476" class="section-text">用户看不懂错误</text>
+  </g>
+
+  <rect x="90" y="900" width="1620" height="84" rx="22" fill="#e8f7ef" stroke="#b7e4ca" stroke-width="2"/>
+  <text x="125" y="936" class="footer-bold">判断方法：</text>
+  <text x="230" y="936" class="footer">数据有问题先调数据；模型不适应再微调；训练不稳调超参数；结果展示不合理调推理阈值；页面慢或报错调系统。</text>
+  <text x="125" y="965" class="footer">这五类调优不是同一件事，分别发生在数据、模型、训练、推理和 Web 工程五个层面。</text>
+</svg>

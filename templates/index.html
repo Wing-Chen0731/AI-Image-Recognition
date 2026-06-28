@@ -14,85 +14,162 @@
       --line: #dbe2ea;
       --accent: #1f6feb;
       --accent-soft: #e8f1ff;
+      --success: #18864b;
+      --success-soft: #e8f7ef;
       --danger: #c62828;
       --shadow: 0 10px 24px rgba(24, 32, 43, 0.08);
     }
 
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
       background: var(--bg);
       color: var(--text);
     }
+
     .page {
-      max-width: 1040px;
+      max-width: 1080px;
       margin: 0 auto;
-      padding: 32px 20px 40px;
+      padding: 28px 20px 40px;
     }
+
     .masthead {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
+
     .masthead h1 {
       margin: 0 0 8px;
       font-size: 28px;
       line-height: 1.2;
       letter-spacing: 0;
     }
+
     .meta {
       color: var(--muted);
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.65;
     }
+
+    .tabs {
+      display: inline-flex;
+      gap: 6px;
+      padding: 5px;
+      margin: 0 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .tab {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
     .layout {
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
+      grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
       gap: 20px;
       align-items: start;
     }
+
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 10px;
+      border-radius: 8px;
       box-shadow: var(--shadow);
       padding: 18px;
     }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
     .dropzone {
-      border: 2px dashed var(--line);
-      border-radius: 10px;
-      background: #fcfdff;
-      padding: 28px 18px;
-      text-align: center;
-      transition: border-color 0.15s ease, background 0.15s ease;
-      cursor: pointer;
       min-height: 210px;
       display: grid;
       place-items: center;
+      padding: 28px 18px;
+      border: 2px dashed var(--line);
+      border-radius: 8px;
+      background: #fcfdff;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
+
     .dropzone.dragover {
       border-color: var(--accent);
       background: var(--accent-soft);
     }
+
     .dropzone strong {
       display: block;
       margin-bottom: 8px;
       font-size: 18px;
     }
+
     .dropzone p {
       margin: 0;
       color: var(--muted);
-      line-height: 1.6;
+      line-height: 1.65;
     }
+
     #file-input {
       display: none;
     }
+
+    .controls {
+      display: none;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .controls.visible {
+      display: block;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
     .actions {
       margin-top: 14px;
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
       align-items: center;
-      flex-wrap: wrap;
     }
+
     .button {
       appearance: none;
       border: 0;
@@ -104,39 +181,63 @@
       padding: 11px 16px;
       cursor: pointer;
     }
+
     .button.secondary {
       background: #e9edf3;
       color: var(--text);
     }
-    .preview {
-      margin-top: 16px;
+
+    .preview,
+    .result-image {
       display: none;
       width: 100%;
-      max-height: 380px;
       object-fit: contain;
       border: 1px solid var(--line);
-      border-radius: 10px;
+      border-radius: 8px;
       background: #fff;
     }
-    .status {
+
+    .preview {
       margin-top: 16px;
-      min-height: 28px;
-      color: var(--muted);
+      max-height: 360px;
     }
+
+    .result-image {
+      margin-top: 14px;
+      max-height: 420px;
+    }
+
+    .status {
+      min-height: 28px;
+      margin-top: 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
     .status.loading { color: var(--accent); }
     .status.error { color: var(--danger); }
+    .status.success { color: var(--success); }
+
     .results {
       display: grid;
       gap: 10px;
       margin-top: 14px;
     }
+
     .result {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px 14px;
       display: grid;
       gap: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
     }
+
+    .result.top {
+      border-color: rgba(24, 134, 75, 0.45);
+      background: var(--success-soft);
+    }
+
     .result-head {
       display: flex;
       justify-content: space-between;
@@ -144,40 +245,44 @@
       align-items: baseline;
       font-size: 14px;
     }
+
+    .result-detail {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
     .result-bar {
       height: 8px;
+      overflow: hidden;
       border-radius: 999px;
       background: #eef2f7;
-      overflow: hidden;
     }
+
     .result-bar > span {
       display: block;
       height: 100%;
-      background: linear-gradient(90deg, #1f6feb, #4f8dff);
+      background: var(--accent);
     }
-    .side-list {
+
+    .notes {
       margin: 0;
       padding-left: 18px;
       color: var(--muted);
-      line-height: 1.7;
+      line-height: 1.75;
     }
-    .thumb {
-      margin-top: 14px;
-      width: 100%;
-      max-height: 280px;
-      object-fit: contain;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: white;
-    }
+
     .footer-note {
       margin-top: 16px;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.65;
     }
+
     @media (max-width: 860px) {
-      .layout { grid-template-columns: 1fr; }
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -186,44 +291,64 @@
     <header class="masthead">
       <h1>AI 图像识别系统</h1>
       <div class="meta">
-        数据集：{{ data_root }} · 类别数：{{ class_count }} · 模型：{{ model_path }}
+        数据集：{{ data_root }} · 类别数：{{ class_count }} · 分类模型：{{ model_path }}<br />
+        检测模型：{{ detector_model }} · 默认检测阈值：{{ detection_threshold }}
       </div>
     </header>
 
+    <div class="tabs" role="tablist" aria-label="识别模式">
+      <button id="tab-classify" class="tab active" type="button" data-mode="classify">图像分类</button>
+      <button id="tab-detect" class="tab" type="button" data-mode="detect">目标检测</button>
+    </div>
+
     <div class="layout">
       <section class="panel">
+        <h2 id="mode-title">图像分类</h2>
         <div id="dropzone" class="dropzone">
           <div>
-            <strong>拖拽图片到这里，或点击选择</strong>
-            <p>支持 JPG、PNG 等常见图片格式。上传后会自动预览并开始识别。</p>
+            <strong id="drop-title">拖拽图片到这里，或点击选择</strong>
+            <p id="drop-copy">上传后会自动预览，并调用分类接口返回 Top-3 类别。</p>
           </div>
         </div>
+
         <input id="file-input" type="file" accept="image/*" />
+
+        <div id="detection-controls" class="controls">
+          <div class="control-row">
+            <label for="threshold">检测置信度阈值</label>
+            <strong id="threshold-value">0.5</strong>
+          </div>
+          <input id="threshold" type="range" min="0.1" max="0.9" step="0.1" value="{{ detection_threshold }}" />
+        </div>
+
         <div class="actions">
           <button id="choose-btn" class="button" type="button">选择图片</button>
           <button id="clear-btn" class="button secondary" type="button">清空</button>
         </div>
-        <img id="preview" class="preview" alt="图片预览" />
+
+        <img id="preview" class="preview" alt="上传图片预览" />
         <div id="status" class="status"></div>
+        <img id="result-image" class="result-image" alt="目标检测画框结果" />
         <div id="results" class="results"></div>
       </section>
 
       <aside class="panel">
-        <h2 style="margin: 0 0 12px; font-size: 18px;">本课识别流程</h2>
-        <ol class="side-list">
-          <li>上传图片到 Web 页面。</li>
-          <li>前端显示预览并发起 `/predict` 请求。</li>
-          <li>后端完成预处理、模型推理和结果排序。</li>
-          <li>前端渲染 Top-3 结果和置信度条。</li>
+        <h2>本课系统闭环</h2>
+        <ol class="notes">
+          <li>分类 Tab 调用 Flask 的 <code>/predict</code>，返回 Top-3 类别。</li>
+          <li>检测 Tab 调用 Flask 的 <code>/detect</code>，返回检测框、类别和带框图片。</li>
+          <li>分类模型和检测模型都使用单例思想，避免每次请求重复加载。</li>
+          <li>检测阈值越低，检测框可能越多；阈值越高，结果更严格但可能漏检。</li>
         </ol>
         <div class="footer-note">
-          这套页面保持了纯 HTML + CSS + 原生 JavaScript 的实现方式，便于课堂讲解路由、状态和前后端联调。
+          第七课的重点不是换一个网页样式，而是把分类和检测两种 AI 能力接入同一个 Web 系统，并完成上传、推理、结果渲染和错误处理的闭环。
         </div>
       </aside>
     </div>
   </div>
 
   <script>
+    const tabs = Array.from(document.querySelectorAll('.tab'));
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const chooseBtn = document.getElementById('choose-btn');
@@ -231,6 +356,179 @@
     const preview = document.getElementById('preview');
     const statusBox = document.getElementById('status');
     const resultsBox = document.getElementById('results');
+    const resultImage = document.getElementById('result-image');
+    const modeTitle = document.getElementById('mode-title');
+    const dropCopy = document.getElementById('drop-copy');
+    const detectionControls = document.getElementById('detection-controls');
+    const threshold = document.getElementById('threshold');
+    const thresholdValue = document.getElementById('threshold-value');
+
+    let currentMode = 'classify';
+    let selectedFile = null;
+
+    const modeConfig = {
+      classify: {
+        title: '图像分类',
+        copy: '上传后会自动预览，并调用分类接口返回 Top-3 类别。',
+        loading: '分类识别中...',
+        success: '分类完成'
+      },
+      detect: {
+        title: '目标检测',
+        copy: '上传后会调用 YOLOv8 检测接口，返回带框图片和检测列表。',
+        loading: '目标检测中...',
+        success: '检测完成'
+      }
+    };
+
+    function switchMode(mode) {
+      currentMode = mode;
+      tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
+      modeTitle.textContent = modeConfig[mode].title;
+      dropCopy.textContent = modeConfig[mode].copy;
+      detectionControls.classList.toggle('visible', mode === 'detect');
+      resetResults();
+      if (selectedFile) {
+        uploadFile(selectedFile);
+      }
+    }
+
+    function resetResults() {
+      statusBox.textContent = '';
+      statusBox.className = 'status';
+      resultsBox.innerHTML = '';
+      resultImage.removeAttribute('src');
+      resultImage.style.display = 'none';
+    }
+
+    function resetAll() {
+      selectedFile = null;
+      fileInput.value = '';
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+      resetResults();
+    }
+
+    function handleFile(file) {
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        preview.src = event.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      uploadFile(file);
+    }
+
+    function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (currentMode === 'detect') {
+        formData.append('conf_threshold', threshold.value);
+      }
+
+      statusBox.textContent = modeConfig[currentMode].loading;
+      statusBox.className = 'status loading';
+      resultsBox.innerHTML = '';
+      resultImage.style.display = 'none';
+
+      fetch(currentMode === 'detect' ? '/detect' : '/predict', {
+        method: 'POST',
+        body: formData
+      })
+      .then((response) => response.json().then((payload) => ({ ok: response.ok, payload })))
+      .then(({ ok, payload }) => {
+        if (!ok || payload.error) {
+          statusBox.textContent = payload.error || '识别失败';
+          statusBox.className = 'status error';
+          return;
+        }
+
+        statusBox.textContent = modeConfig[currentMode].success;
+        statusBox.className = 'status success';
+        if (currentMode === 'detect') {
+          renderDetections(payload);
+        } else {
+          renderClassification(payload);
+        }
+      })
+      .catch((error) => {
+        statusBox.textContent = `请求失败：${error.message}`;
+        statusBox.className = 'status error';
+      });
+    }
+
+    function renderClassification(payload) {
+      resultsBox.innerHTML = payload.results.map((item, index) => {
+        const percent = Math.max(0, Math.min(100, item.score));
+        return `
+          <div class="result ${index === 0 ? 'top' : ''}">
+            <div class="result-head">
+              <strong>${index + 1}. ${escapeHtml(item.label)}</strong>
+              <span>${percent.toFixed(2)}%</span>
+            </div>
+            <div class="result-bar"><span style="width:${percent}%"></span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDetections(payload) {
+      resultImage.src = payload.image_url;
+      resultImage.style.display = 'block';
+
+      if (!payload.detections.length) {
+        resultsBox.innerHTML = `
+          <div class="result">
+            <div class="result-head">
+              <strong>未检测到高置信度目标</strong>
+              <span>阈值 ${payload.conf_threshold}</span>
+            </div>
+            <div class="result-detail">可以尝试降低阈值，例如 0.3，再上传同一张图片观察变化。</div>
+          </div>
+        `;
+        return;
+      }
+
+      resultsBox.innerHTML = payload.detections.map((item, index) => {
+        const percent = Math.max(0, Math.min(100, item.confidence));
+        return `
+          <div class="result ${index === 0 ? 'top' : ''}">
+            <div class="result-head">
+              <strong>${index + 1}. ${escapeHtml(item.label)}</strong>
+              <span>${percent.toFixed(2)}%</span>
+            </div>
+            <div class="result-detail">
+              框坐标：(${item.x1}, ${item.y1}) - (${item.x2}, ${item.y2})
+            </div>
+            <div class="result-bar"><span style="width:${percent}%"></span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+    });
+
+    threshold.addEventListener('input', () => {
+      thresholdValue.textContent = threshold.value;
+    });
+
+    threshold.addEventListener('change', () => {
+      if (selectedFile && currentMode === 'detect') {
+        uploadFile(selectedFile);
+      }
+    });
 
     chooseBtn.addEventListener('click', () => fileInput.click());
     dropzone.addEventListener('click', () => fileInput.click());
@@ -253,64 +551,8 @@
         handleFile(file);
       }
     });
-    clearBtn.addEventListener('click', () => {
-      fileInput.value = '';
-      preview.removeAttribute('src');
-      preview.style.display = 'none';
-      statusBox.textContent = '';
-      statusBox.className = 'status';
-      resultsBox.innerHTML = '';
-    });
-
-    function handleFile(file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        preview.src = event.target.result;
-        preview.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
-      uploadFile(file);
-    }
-
-    function uploadFile(file) {
-      const formData = new FormData();
-      formData.append('file', file);
-      statusBox.textContent = '识别中...';
-      statusBox.className = 'status loading';
-      resultsBox.innerHTML = '';
-
-      fetch('/predict', {
-        method: 'POST',
-        body: formData
-      })
-      .then((response) => response.json().then((payload) => ({ ok: response.ok, payload })))
-      .then(({ ok, payload }) => {
-        if (!ok || payload.error) {
-          statusBox.textContent = payload.error || '识别失败';
-          statusBox.className = 'status error';
-          return;
-        }
-
-        statusBox.textContent = '识别完成';
-        statusBox.className = 'status';
-        resultsBox.innerHTML = payload.results.map((item, index) => {
-          const percent = Math.max(0, Math.min(100, item.score));
-          return `
-            <div class="result">
-              <div class="result-head">
-                <strong>${index + 1}. ${item.label}</strong>
-                <span>${percent.toFixed(2)}%</span>
-              </div>
-              <div class="result-bar"><span style="width:${percent}%"></span></div>
-            </div>
-          `;
-        }).join('');
-      })
-      .catch((error) => {
-        statusBox.textContent = `请求失败：${error.message}`;
-        statusBox.className = 'status error';
-      });
-    }
+    clearBtn.addEventListener('click', resetAll);
+    thresholdValue.textContent = threshold.value;
   </script>
 </body>
 </html>
