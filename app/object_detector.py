@@ -40,7 +40,11 @@ class ObjectDetector(ABC):
     """Interface for object detectors."""
 
     @abstractmethod
-    def detect(self, image_path: str | Path) -> list[DetectionResult]:
+    def detect(
+        self,
+        image_path: str | Path,
+        conf_threshold: float | None = None,
+    ) -> list[DetectionResult]:
         """Detect objects in one image and return normalized result objects."""
 
 
@@ -57,7 +61,11 @@ class YOLOv8Detector(ObjectDetector):
 
         config_dir = Path(__file__).resolve().parents[1] / ".ultralytics"
         config_dir.mkdir(parents=True, exist_ok=True)
-        os.environ.setdefault("YOLO_CONFIG_DIR", str(config_dir))
+        # Force Ultralytics to keep its settings inside the project. This avoids
+        # permission problems with a read-only user profile or another machine.
+        os.environ["YOLO_CONFIG_DIR"] = str(config_dir)
+        # Do not let a classroom request silently run pip or depend on network access.
+        os.environ["YOLO_AUTOINSTALL"] = "false"
 
         try:
             from ultralytics import YOLO
@@ -68,15 +76,30 @@ class YOLOv8Detector(ObjectDetector):
             ) from exc
 
         self.model_path = str(model_path)
-        self.conf_threshold = conf_threshold
+        self.default_conf_threshold = conf_threshold
         self.model = YOLO(self.model_path)
 
-    def detect(self, image_path: str | Path) -> list[DetectionResult]:
+    @staticmethod
+    def _validate_threshold(conf_threshold: float) -> float:
+        if not 0.0 <= conf_threshold <= 1.0:
+            raise ValueError("conf_threshold must be between 0.0 and 1.0.")
+        return conf_threshold
+
+    def detect(
+        self,
+        image_path: str | Path,
+        conf_threshold: float | None = None,
+    ) -> list[DetectionResult]:
         path = Path(image_path)
         if not path.exists():
             raise FileNotFoundError(f"Image not found: {path}")
 
-        results = self.model(str(path), conf=self.conf_threshold, verbose=False)
+        threshold = (
+            self.default_conf_threshold
+            if conf_threshold is None
+            else self._validate_threshold(conf_threshold)
+        )
+        results = self.model(str(path), conf=threshold, verbose=False)
         if not results:
             return []
 
@@ -88,7 +111,7 @@ class YOLOv8Detector(ObjectDetector):
         detections: list[DetectionResult] = []
         for box in boxes:
             confidence = float(box.conf[0].item())
-            if confidence < self.conf_threshold:
+            if confidence < threshold:
                 continue
 
             x1, y1, x2, y2 = [float(value) for value in box.xyxy[0].tolist()]

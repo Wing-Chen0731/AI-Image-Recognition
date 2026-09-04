@@ -1,57 +1,104 @@
+"""Check the runtime used by the Lesson 6/7 project.
+
+Run from the repository root after activating the project conda environment:
+    python tests/test_env.py
 """
-test_env.py - 环境验证小脚本
-运行方法：在终端（已激活虚拟环境）执行 python app/test_env.py
-"""
+
+from __future__ import annotations
+
+import importlib
+from importlib.metadata import PackageNotFoundError, version
 import os
 import sys
+from pathlib import Path
 
-print("=" * 40)
-print("🔍 正在检查核心库导入...")
 
-try:
-    import cv2
-    print(f"✅ OpenCV 版本: {cv2.__version__}")
-except Exception as e:
-    print(f"❌ OpenCV 导入失败: {e}")
-    sys.exit(1)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+os.environ["YOLO_CONFIG_DIR"] = str(PROJECT_ROOT / ".ultralytics")
+os.environ["YOLO_AUTOINSTALL"] = "false"
 
-try:
-    import tensorflow as tf
-    print(f"✅ TensorFlow 版本: {tf.__version__}")
-except Exception as e:
-    print(f"❌ TensorFlow 导入失败: {e}")
-    sys.exit(1)
 
-try:
-    import flask
-    print(f"✅ Flask 版本: {flask.__version__}")
-except Exception as e:
-    print(f"❌ Flask 导入失败: {e}")
-    sys.exit(1)
+def check_imports() -> bool:
+    required = (
+        ("torch", "PyTorch"),
+        ("torchvision", "TorchVision"),
+        ("PIL", "Pillow"),
+        ("cv2", "OpenCV"),
+        ("flask", "Flask"),
+        ("ultralytics", "Ultralytics"),
+    )
+    all_ok = True
+    print("Checking required packages...")
+    for module_name, display_name in required:
+        try:
+            module = importlib.import_module(module_name)
+            try:
+                package_version = version(
+                    "Pillow" if module_name == "PIL" else display_name
+                )
+            except PackageNotFoundError:
+                package_version = getattr(module, "__version__", "installed")
+            print(f"[OK] {display_name}: {package_version}")
+        except Exception as exc:
+            all_ok = False
+            print(f"[FAIL] {display_name}: {exc}")
+    return all_ok
 
-print("✅ 所有核心库导入成功！\n")
 
-print("=" * 40)
-print("🖼️  正在测试 OpenCV 图片读取...")
+def check_assets() -> bool:
+    classifier_data = PROJECT_ROOT / "data" / "oxford_pet_split" / "train"
+    fallback_data = PROJECT_ROOT / "data" / "train"
+    classifier_model = PROJECT_ROOT / "models" / "oxford_pet_mobilenet_epoch1.pth"
+    fallback_model = PROJECT_ROOT / "finetuned_mobilenet.pth"
+    detector_model = PROJECT_ROOT / "yolov8n.pt"
 
-IMAGE_PATH = os.path.join("images", "sample.jpg")   # 请先在 images/ 里放一张 sample.jpg
+    data_ready = classifier_data.is_dir() or fallback_data.is_dir()
+    model_ready = classifier_model.is_file() or fallback_model.is_file()
+    detector_ready = detector_model.is_file()
 
-if not os.path.exists(IMAGE_PATH):
-    print(f"⚠️  未找到测试图片: {IMAGE_PATH}")
-    print("   请在 images 文件夹里放一张 .jpg 图片并命名为 sample.jpg")
-else:
-    img = cv2.imread(IMAGE_PATH)
-    if img is None:
-        print(f"❌ 图片读取失败，可能是文件损坏或格式不支持")
-    else:
-        h, w, c = img.shape
-        print(f"📷 图片路径: {IMAGE_PATH}")
-        print(f"📐 尺寸: 宽={w}px, 高={h}px, 通道数={c}")
+    print("Checking project assets...")
+    print(f"[{'OK' if data_ready else 'FAIL'}] classifier training directory")
+    print(f"[{'OK' if model_ready else 'FAIL'}] fine-tuned classifier checkpoint")
+    print(
+        f"[{'OK' if detector_ready else 'WARN'}] local YOLOv8 checkpoint "
+        "(Ultralytics can download it on first detection)"
+    )
+    return data_ready and model_ready
 
-        resized = cv2.resize(img, (224, 224))
-        output = os.path.join("images", "test_resized.jpg")
-        cv2.imwrite(output, resized)
-        print(f"💾 已生成 224x224 缩放图: {output}")
 
-print("\n" + "=" * 40)
-print("🎉 环境验证完成！如果没有看到 ❌，你的 AI 开发环境一切就绪。")
+def check_image() -> bool:
+    try:
+        import cv2
+
+        candidates = list((PROJECT_ROOT / "data").rglob("*.jpg"))
+        if not candidates:
+            candidates = list((PROJECT_ROOT / "images").rglob("*.jpg"))
+        if not candidates:
+            print("[WARN] no JPG sample found for image-read check")
+            return True
+
+        image = cv2.imread(str(candidates[0]))
+        if image is None:
+            print(f"[FAIL] OpenCV could not read {candidates[0]}")
+            return False
+        height, width = image.shape[:2]
+        print(f"[OK] image read: {width}x{height}")
+        return True
+    except Exception as exc:
+        print(f"[FAIL] image-read check: {exc}")
+        return False
+
+
+def main() -> int:
+    print(f"Project root: {PROJECT_ROOT}")
+    results = (check_imports(), check_assets(), check_image())
+    if all(results):
+        print("Environment check passed.")
+        return 0
+    print("Environment check failed. Activate the correct conda environment and install requirements.")
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -85,6 +85,7 @@ class FineTunedLoader(ModelLoader):
         model = build_finetune_model(
             num_classes=self.num_classes,
             freeze_features=self.freeze_features,
+            pretrained=False,
         )
 
         try:
@@ -107,12 +108,16 @@ class FineTunedLoader(ModelLoader):
 def build_finetune_model(
     num_classes: int,
     freeze_features: bool = True,
+    pretrained: bool = True,
 ) -> nn.Module:
     """Build a MobileNetV3 model for custom image classification.
 
     Args:
         num_classes: Number of output classes in the custom dataset.
         freeze_features: If True, only the classifier head is trained.
+        pretrained: If True, initialize with ImageNet weights for training.
+            Loading a complete fine-tuned checkpoint should pass False so
+            inference never depends on a network download.
     """
 
     if num_classes < 2:
@@ -121,7 +126,8 @@ def build_finetune_model(
     try:
         from torchvision.models import MobileNet_V3_Large_Weights, mobilenet_v3_large
 
-        model = mobilenet_v3_large(weights=MobileNet_V3_Large_Weights.IMAGENET1K_V1)
+        weights = MobileNet_V3_Large_Weights.IMAGENET1K_V1 if pretrained else None
+        model = mobilenet_v3_large(weights=weights)
     except Exception as exc:
         raise ModelDownloadError(
             f"Failed to load MobileNetV3-Large for fine-tuning: {exc}"

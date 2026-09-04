@@ -171,12 +171,12 @@ class YOLOv8Detector(ObjectDetector):
 
         config_dir = Path(__file__).resolve().parents[1] / ".ultralytics"
         config_dir.mkdir(parents=True, exist_ok=True)
-        os.environ.setdefault("YOLO_CONFIG_DIR", str(config_dir))
+        os.environ["YOLO_CONFIG_DIR"] = str(config_dir)
 
         from ultralytics import YOLO
 
         self.model_path = str(model_path)
-        self.conf_threshold = conf_threshold
+        self.default_conf_threshold = conf_threshold
         self.model = YOLO(self.model_path)
 ```
 
@@ -184,7 +184,7 @@ class YOLOv8Detector(ObjectDetector):
 
 - `YOLOv8Detector(ObjectDetector)`：说明它是 `ObjectDetector` 的一种具体实现。
 - `model_path="yolov8n.pt"`：默认使用 YOLOv8 nano 版本权重。
-- `conf_threshold=0.5`：默认只保留置信度不低于 0.5 的结果。
+- `conf_threshold=0.5`：保存一个默认阈值，调用时也可以传入本次请求的阈值。
 - `if not 0.0 <= conf_threshold <= 1.0`：防止学生传入无效阈值。
 - `.ultralytics` 目录：把 YOLO 的配置写在项目目录里，减少用户目录权限问题。
 - `from ultralytics import YOLO`：导入 YOLOv8 官方库。
@@ -204,12 +204,17 @@ pip install -r requirements.txt
 ### 第 74-108 行：`detect()` 执行目标检测
 
 ```python
-def detect(self, image_path: str | Path) -> list[DetectionResult]:
+def detect(
+    self,
+    image_path: str | Path,
+    conf_threshold: float | None = None,
+) -> list[DetectionResult]:
     path = Path(image_path)
     if not path.exists():
         raise FileNotFoundError(f"Image not found: {path}")
 
-    results = self.model(str(path), conf=self.conf_threshold, verbose=False)
+    threshold = self.default_conf_threshold if conf_threshold is None else self._validate_threshold(conf_threshold)
+    results = self.model(str(path), conf=threshold, verbose=False)
     if not results:
         return []
 
@@ -221,7 +226,7 @@ def detect(self, image_path: str | Path) -> list[DetectionResult]:
     detections: list[DetectionResult] = []
     for box in boxes:
         confidence = float(box.conf[0].item())
-        if confidence < self.conf_threshold:
+        if confidence < threshold:
             continue
 
         x1, y1, x2, y2 = [float(value) for value in box.xyxy[0].tolist()]
@@ -394,7 +399,8 @@ cv2.putText(...)
 target_dir = Path(output_dir) if output_dir is not None else source.parent
 target_dir.mkdir(parents=True, exist_ok=True)
 target = target_dir / f"{source.stem}_detected{source.suffix or '.jpg'}"
-cv2.imwrite(str(target), image)
+if not cv2.imwrite(str(target), image):
+    raise OSError(f"Unable to save rendered image: {target}")
 return target
 ```
 
@@ -537,7 +543,6 @@ UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 _model = None
 _detector = None
-_detector_threshold: float | None = None
 _metadata: dict[str, str] = {}
 ```
 
@@ -627,11 +632,10 @@ def get_model():
         _model = loader.load_model()
     return _model
 
-def get_detector(conf_threshold: float = DEFAULT_DETECTION_THRESHOLD):
-    global _detector, _detector_threshold
-    if _detector is None or _detector_threshold != conf_threshold:
+def get_detector():
+    global _detector
+    if _detector is None:
         _detector = YOLOv8Detector(...)
-        _detector_threshold = conf_threshold
     return _detector
 ```
 
@@ -640,7 +644,7 @@ def get_detector(conf_threshold: float = DEFAULT_DETECTION_THRESHOLD):
 - `get_model()` 管分类模型。
 - `get_detector()` 管检测模型。
 - 第一次调用时加载模型，后面直接返回已加载的模型。
-- 检测阈值变化时，会重新创建检测器。
+- 检测阈值变化时，只传给本次 `detect()` 调用，不会重新创建检测器。
 
 和 CPSC210 联系：
 
@@ -685,16 +689,16 @@ def detect_image(
     image_path: Path,
     conf_threshold: float = DEFAULT_DETECTION_THRESHOLD,
 ) -> tuple[list[dict[str, float | str]], Path]:
-    detector = get_detector(conf_threshold)
-    detections = detector.detect(image_path)
+    detector = get_detector()
+    detections = detector.detect(image_path, conf_threshold=conf_threshold)
     rendered_path = draw_detections(image_path, detections, output_dir=UPLOAD_FOLDER)
     return [detection.to_dict() for detection in detections], rendered_path
 ```
 
 逐段解释：
 
-- `get_detector(conf_threshold)`：拿到 YOLOv8 检测器。
-- `detector.detect(image_path)`：执行目标检测。
+- `get_detector()`：拿到已经缓存的 YOLOv8 检测器。
+- `detector.detect(image_path, conf_threshold=conf_threshold)`：执行本次阈值下的目标检测。
 - `draw_detections(...)`：把检测框画到图片上。
 - `to_dict()`：把检测结果转成 JSON 友好的格式。
 - 返回两部分：检测结果列表、带框图片路径。
@@ -776,14 +780,18 @@ def image_url(image_path: Path) -> str:
 ```python
 @app.route("/")
 def index():
-    class_names = load_class_names()
-    model_path = resolve_model_path()
+    classifier = classification_status()
+    detector = detection_status()
     return render_template(
         "index.html",
-        model_path=str(model_path.relative_to(PROJECT_ROOT)),
-        detector_model=resolve_detector_model_path(),
-        data_root=str(resolve_data_root().relative_to(PROJECT_ROOT)),
-        class_count=len(class_names),
+        model_path=classifier["model_path"],
+        detector_model=detector["model_path"],
+        data_root=classifier["data_root"],
+        class_count=classifier["class_count"],
+        classification_ready=classifier["ready"],
+        classification_message=classifier["message"],
+        detection_ready=detector["ready"],
+        detection_message=detector["message"],
         detection_threshold=DEFAULT_DETECTION_THRESHOLD,
     )
 ```
@@ -792,12 +800,13 @@ def index():
 
 - 用户打开 `http://127.0.0.1:5000` 时，会进入这个函数。
 - 它返回 `templates/index.html` 页面。
-- 同时把模型路径、数据路径、类别数量、检测阈值传给页面。
+- 同时把模型路径、数据路径、类别数量、检测阈值和资源状态传给页面。
+- 首页只检查资源，不加载模型，所以即使分类权重缺失，也能打开页面查看诊断信息。
 
 和前面问题联系：
 
 - 如果报 `TemplateNotFound: index.html`，说明模板路径或运行目录有问题。
-- 如果报 `No fine-tuned checkpoint found`，说明分类权重没准备好。
+- 如果页面显示 `No fine-tuned checkpoint found`，说明分类权重没准备好；恢复权重后再执行分类即可。
 
 ### 第 250-271 行：分类接口 `/predict`
 

@@ -72,5 +72,6 @@ def draw_detections(
     target_dir = Path(output_dir) if output_dir is not None else source.parent
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / f"{source.stem}_detected{source.suffix or '.jpg'}"
-    cv2.imwrite(str(target), image)
+    if not cv2.imwrite(str(target), image):
+        raise OSError(f"Unable to save rendered image: {target}")
     return target

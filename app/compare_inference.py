@@ -31,7 +31,7 @@ except ModuleNotFoundError:  # Allows: python app/compare_inference.py
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_IMAGE = PROJECT_ROOT / "images" / "cat.jpg"
-DEFAULT_MODEL = PROJECT_ROOT / "finetuned_mobilenet.pth"
+DEFAULT_MODEL = PROJECT_ROOT / "models" / "oxford_pet_mobilenet_epoch1.pth"
 DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "oxford_pet_split"
 
 

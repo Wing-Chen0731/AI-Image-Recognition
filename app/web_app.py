@@ -12,6 +12,8 @@ workflow. The Web app now exposes two endpoints:
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import time
 from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
@@ -34,10 +36,12 @@ try:
     from app.model_loader import FineTunedLoader
     from app.object_detector import YOLOv8Detector
     from app.preprocess import draw_detections
+    from app.exceptions import ModelDownloadError
 except ModuleNotFoundError:  # Allows: python app/web_app.py
     from model_loader import FineTunedLoader
     from object_detector import YOLOv8Detector
     from preprocess import draw_detections
+    from exceptions import ModelDownloadError
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +54,8 @@ UPLOAD_FOLDER = STATIC_FOLDER / "uploads"
 IMAGE_SIZE = 224
 DEFAULT_DETECTION_THRESHOLD = 0.5
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+MAX_UPLOAD_AGE_SECONDS = 24 * 60 * 60
+MAX_UPLOAD_FILES = 100
 
 app = (
     Flask(__name__, static_folder=str(STATIC_FOLDER), template_folder=str(TEMPLATE_FOLDER))
@@ -63,7 +69,6 @@ UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 _model = None
 _detector = None
-_detector_threshold: float | None = None
 _metadata: dict[str, str] = {}
 
 
@@ -72,7 +77,7 @@ def resolve_data_root() -> Path:
 
     for root in (DEFAULT_DATA_ROOT, PROJECT_ROOT / "data"):
         train_dir = root / "train"
-        if train_dir.exists():
+        if train_dir.is_dir():
             return root
     raise FileNotFoundError(
         "No dataset split found. Expected data/oxford_pet_split/train or data/train."
@@ -108,6 +113,97 @@ def resolve_detector_model_path() -> str:
     return "yolov8n.pt"
 
 
+def display_path(path: str | Path) -> str:
+    """Return a project-relative path for UI and API responses."""
+
+    candidate = Path(path)
+    try:
+        return str(candidate.resolve().relative_to(PROJECT_ROOT.resolve()))
+    except ValueError:
+        return str(path)
+
+
+def classification_status() -> dict[str, str | int | bool]:
+    """Describe whether the classification assets are ready without loading a model."""
+
+    data_root = DEFAULT_DATA_ROOT if DEFAULT_DATA_ROOT.is_dir() else PROJECT_ROOT / "data"
+    model_path = DEFAULT_MODEL_PATH
+    try:
+        data_root = resolve_data_root()
+        class_count = len(load_class_names())
+        model_path = resolve_model_path()
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        return {
+            "ready": False,
+            "data_root": display_path(data_root),
+            "class_count": 0,
+            "model_path": display_path(model_path),
+            "message": str(exc),
+        }
+
+    return {
+        "ready": True,
+        "data_root": display_path(data_root),
+        "class_count": class_count,
+        "model_path": display_path(model_path),
+        "message": "分类数据集与模型已就绪。",
+    }
+
+
+def detection_status() -> dict[str, str | bool]:
+    """Describe the YOLO asset without downloading or loading it on page open."""
+
+    detector_model = resolve_detector_model_path()
+    ultralytics_installed = importlib.util.find_spec("ultralytics") is not None
+    if not ultralytics_installed:
+        ready = False
+        message = "未安装 Ultralytics，请先执行 pip install -r requirements.txt。"
+    elif Path(detector_model).is_file():
+        ready = True
+        message = "YOLOv8 权重已在项目中，可直接检测。"
+    else:
+        ready = True
+        message = "首次使用检测时，Ultralytics 会尝试下载 yolov8n.pt。"
+    return {
+        "ready": ready,
+        "model_path": display_path(detector_model),
+        "message": message,
+    }
+
+
+def cleanup_uploads() -> None:
+    """Keep classroom upload artifacts bounded and remove files older than one day."""
+
+    def try_remove(path: Path) -> None:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError as exc:
+            # A file may still be held by an image viewer or antivirus scanner.
+            # Skipping it keeps one locked temporary file from stopping Flask.
+            if app is not None:
+                app.logger.debug("Unable to remove temporary file %s: %s", path.name, exc)
+
+    now = time.time()
+    candidates = []
+    for path in UPLOAD_FOLDER.iterdir():
+        if path.is_file() and path.name != ".gitkeep":
+            try:
+                modified_at = path.stat().st_mtime
+            except OSError:
+                continue
+            if now - modified_at > MAX_UPLOAD_AGE_SECONDS:
+                try_remove(path)
+            else:
+                candidates.append((modified_at, path))
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    for _, path in candidates[MAX_UPLOAD_FILES:]:
+        try_remove(path)
+
+
+cleanup_uploads()
+
+
 def get_model():
     """Load the fine-tuned classifier once and reuse it for all requests."""
 
@@ -118,42 +214,42 @@ def get_model():
         loader = FineTunedLoader(model_path, num_classes=len(class_names))
         _model = loader.load_model()
         _metadata = {
-            "model_path": str(model_path),
-            "data_root": str(resolve_data_root()),
+            "model_path": display_path(model_path),
+            "data_root": display_path(resolve_data_root()),
             "class_count": str(len(class_names)),
         }
     return _model
 
 
-def get_detector(conf_threshold: float = DEFAULT_DETECTION_THRESHOLD):
-    """Load the YOLOv8 detector once and reuse it while the threshold is unchanged."""
+def get_detector():
+    """Load the YOLOv8 detector once; confidence is selected per request."""
 
-    global _detector, _detector_threshold
-    if _detector is None or _detector_threshold != conf_threshold:
+    global _detector
+    if _detector is None:
         _detector = YOLOv8Detector(
             model_path=resolve_detector_model_path(),
-            conf_threshold=conf_threshold,
+            conf_threshold=DEFAULT_DETECTION_THRESHOLD,
         )
-        _detector_threshold = conf_threshold
     return _detector
 
 
 def preprocess_image(image_path: Path) -> torch.Tensor:
     """Convert an uploaded image into the tensor expected by MobileNetV3."""
 
-    image = Image.open(image_path).convert("RGB")
-    pipeline = transforms.Compose(
-        [
-            transforms.Resize(256),
-            transforms.CenterCrop(IMAGE_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ),
-        ]
-    )
-    return pipeline(image).unsqueeze(0)
+    with Image.open(image_path) as source_image:
+        image = source_image.convert("RGB")
+        pipeline = transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(IMAGE_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ]
+        )
+        return pipeline(image).unsqueeze(0)
 
 
 def predict_image(image_path: Path, topk: int = 3) -> list[dict[str, float | str]]:
@@ -185,9 +281,10 @@ def detect_image(
 ) -> tuple[list[dict[str, float | str]], Path]:
     """Run object detection and save a rendered image with boxes."""
 
-    detector = get_detector(conf_threshold)
-    detections = detector.detect(image_path)
+    detector = get_detector()
+    detections = detector.detect(image_path, conf_threshold=conf_threshold)
     rendered_path = draw_detections(image_path, detections, output_dir=UPLOAD_FOLDER)
+    cleanup_uploads()
     return [detection.to_dict() for detection in detections], rendered_path
 
 
@@ -206,23 +303,35 @@ def parse_conf_threshold() -> float:
 
 
 def save_upload(upload) -> Path:
-    """Persist an uploaded image with a sanitized unique filename."""
+    """Persist and validate an uploaded image with a sanitized unique filename."""
+
+    cleanup_uploads()
 
     original_name = Path(upload.filename or "").name
-    if secure_filename is None:
-        filename = original_name
-    else:
-        filename = secure_filename(original_name)
-
-    if not filename:
-        raise ValueError("文件名为空。")
-
-    suffix = Path(filename).suffix.lower()
+    suffix = Path(original_name).suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
         raise ValueError("只支持 JPG、PNG、BMP、WEBP 等常见图片格式。")
 
-    target = UPLOAD_FOLDER / f"{uuid4().hex}_{filename}"
-    upload.save(target)
+    # Keep the extension from the original name. Werkzeug removes non-ASCII
+    # basename characters, so a Chinese-only filename could otherwise become
+    # just "jpg" and fail the extension check.
+    if secure_filename is None:
+        safe_stem = "upload"
+    else:
+        safe_stem = Path(secure_filename(original_name)).stem or "upload"
+        safe_stem = secure_filename(safe_stem) or "upload"
+
+    if not safe_stem:
+        raise ValueError("文件名为空。")
+
+    target = UPLOAD_FOLDER / f"{uuid4().hex}_{safe_stem}{suffix}"
+    upload.save(str(target))
+    try:
+        with Image.open(target) as image:
+            image.verify()
+    except (OSError, SyntaxError, ValueError) as exc:
+        target.unlink(missing_ok=True)
+        raise ValueError("上传文件不是有效图片，或图片文件已损坏。") from exc
     return target
 
 
@@ -232,18 +341,49 @@ def image_url(image_path: Path) -> str:
     return url_for("static", filename=f"uploads/{image_path.name}")
 
 
+def inference_error_response(exc: Exception):
+    """Convert expected inference failures into useful, safe API responses."""
+
+    if isinstance(exc, ValueError):
+        status_code = 400
+        message = str(exc)
+    elif isinstance(exc, ModelDownloadError):
+        app.logger.exception("Model loading failed")
+        status_code = 503
+        message = "模型权重无法加载，请确认项目文件完整，并查看终端日志。"
+    elif isinstance(exc, ModuleNotFoundError):
+        status_code = 503
+        message = str(exc)
+    elif isinstance(exc, FileNotFoundError):
+        status_code = 503
+        message = "项目所需的数据或模型文件不存在，请先运行环境检查。"
+    else:
+        app.logger.exception("Inference request failed")
+        status_code = 500
+        message = "服务器处理图片时发生错误，请查看终端日志。"
+    return jsonify({"error": message}), status_code
+
+
 if app is not None:
+
+    @app.errorhandler(413)
+    def request_too_large(_error):
+        return jsonify({"error": "图片不能超过 16 MB。"}), 413
 
     @app.route("/")
     def index():
-        class_names = load_class_names()
-        model_path = resolve_model_path()
+        classifier = classification_status()
+        detector = detection_status()
         return render_template(
             "index.html",
-            model_path=str(model_path.relative_to(PROJECT_ROOT)),
-            detector_model=resolve_detector_model_path(),
-            data_root=str(resolve_data_root().relative_to(PROJECT_ROOT)),
-            class_count=len(class_names),
+            model_path=classifier["model_path"],
+            detector_model=detector["model_path"],
+            data_root=classifier["data_root"],
+            class_count=classifier["class_count"],
+            classification_ready=classifier["ready"],
+            classification_message=classifier["message"],
+            detection_ready=detector["ready"],
+            detection_message=detector["message"],
             detection_threshold=DEFAULT_DETECTION_THRESHOLD,
         )
 
@@ -256,6 +396,7 @@ if app is not None:
         if file.filename == "":
             return jsonify({"error": "文件名为空。"}), 400
 
+        image_path = None
         try:
             image_path = save_upload(file)
             results = predict_image(image_path, topk=3)
@@ -268,7 +409,9 @@ if app is not None:
                 }
             )
         except Exception as exc:
-            return jsonify({"error": str(exc)}), 500
+            if image_path is not None:
+                image_path.unlink(missing_ok=True)
+            return inference_error_response(exc)
 
     @app.route("/detect", methods=["POST"])
     def detect():
@@ -279,6 +422,7 @@ if app is not None:
         if file.filename == "":
             return jsonify({"error": "文件名为空。"}), 400
 
+        image_path = None
         try:
             conf_threshold = parse_conf_threshold()
             image_path = save_upload(file)
@@ -290,11 +434,13 @@ if app is not None:
                     "image_url": image_url(rendered_path),
                     "source_image_url": image_url(image_path),
                     "conf_threshold": conf_threshold,
-                    "detector_model": resolve_detector_model_path(),
+                    "detector_model": display_path(resolve_detector_model_path()),
                 }
             )
         except Exception as exc:
-            return jsonify({"error": str(exc)}), 500
+            if image_path is not None:
+                image_path.unlink(missing_ok=True)
+            return inference_error_response(exc)
 
 
 def parse_args() -> argparse.Namespace:

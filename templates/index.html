@@ -3,24 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 图像识别系统</title>
+  <title>宠物图像识别与目标检测系统</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f7fb;
-      --panel: #ffffff;
-      --text: #18202b;
-      --muted: #5f6b7a;
-      --line: #dbe2ea;
-      --accent: #1f6feb;
-      --accent-soft: #e8f1ff;
-      --success: #18864b;
-      --success-soft: #e8f7ef;
-      --danger: #c62828;
-      --shadow: 0 10px 24px rgba(24, 32, 43, 0.08);
+      --bg: #f3f2ed;
+      --surface: #fffefa;
+      --surface-soft: #f7f8f3;
+      --surface-strong: #172624;
+      --text: #20302d;
+      --muted: #6d7975;
+      --line: #d9e1da;
+      --blue: #157a70;
+      --blue-soft: #e3f1ed;
+      --green: #257956;
+      --green-soft: #e6f3e9;
+      --amber: #a06b1f;
+      --amber-soft: #fff5dc;
+      --red: #bd5a46;
+      --red-soft: #fff0ec;
+      --purple: #7661a8;
+      --purple-soft: #f0ecfa;
+      --shadow: 0 18px 45px rgba(32, 48, 45, 0.08);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -29,213 +38,442 @@
       color: var(--text);
     }
 
-    .page {
-      max-width: 1080px;
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: var(--surface-strong);
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .topbar-inner {
+      max-width: 1180px;
       margin: 0 auto;
-      padding: 28px 20px 40px;
+      padding: 22px 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
     }
 
-    .masthead {
-      margin-bottom: 18px;
+    .brand {
+      display: grid;
+      gap: 6px;
     }
 
-    .masthead h1 {
-      margin: 0 0 8px;
+    .brand-kicker {
+      color: #93c5fd;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
       font-size: 28px;
       line-height: 1.2;
       letter-spacing: 0;
     }
 
-    .meta {
-      color: var(--muted);
+    .brand-summary {
+      margin: 0;
+      color: #cbd5e1;
       font-size: 14px;
-      line-height: 1.65;
+      line-height: 1.6;
+      max-width: 760px;
     }
 
-    .tabs {
+    .system-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .badge {
       display: inline-flex;
-      gap: 6px;
-      padding: 5px;
-      margin: 0 0 16px;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.08);
+      color: #e5eefb;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .content {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px 20px 40px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      min-height: 86px;
+      padding: 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
-    }
-
-    .tab {
-      appearance: none;
-      border: 0;
-      border-radius: 6px;
-      padding: 10px 14px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .tab.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .layout {
+      background: var(--surface);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
       display: grid;
-      grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
-      gap: 20px;
+      align-content: space-between;
+      gap: 10px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      overflow-wrap: anywhere;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .metric-value.is-missing {
+      color: var(--red);
+    }
+
+    .metric-note {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(330px, 0.9fr);
+      gap: 18px;
       align-items: start;
     }
 
     .panel {
-      background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
+      background: var(--surface);
       box-shadow: var(--shadow);
-      padding: 18px;
     }
 
-    .panel h2 {
-      margin: 0 0 12px;
+    .panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .panel-title {
+      margin: 0;
       font-size: 18px;
-      line-height: 1.3;
+      line-height: 1.25;
       letter-spacing: 0;
     }
 
+    .panel-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .mode-tab {
+      min-width: 92px;
+      border: 0;
+      border-radius: 6px;
+      padding: 9px 12px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .mode-tab.active {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .panel-body {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
     .dropzone {
-      min-height: 210px;
+      min-height: 230px;
+      padding: 24px;
+      border: 2px dashed #bfd0e4;
+      border-radius: 8px;
+      background: #f9fbfe;
       display: grid;
       place-items: center;
-      padding: 28px 18px;
-      border: 2px dashed var(--line);
-      border-radius: 8px;
-      background: #fcfdff;
       text-align: center;
       cursor: pointer;
-      transition: border-color 0.15s ease, background 0.15s ease;
+      transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
     }
 
     .dropzone.dragover {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      transform: translateY(-1px);
     }
 
-    .dropzone strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 18px;
+    .dropzone-title {
+      margin: 0 0 8px;
+      font-size: 19px;
+      font-weight: 800;
+      line-height: 1.35;
     }
 
-    .dropzone p {
+    .dropzone-copy {
       margin: 0;
       color: var(--muted);
+      font-size: 14px;
       line-height: 1.65;
+    }
+
+    .file-meta {
+      display: none;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .file-meta.visible {
+      display: block;
     }
 
     #file-input {
       display: none;
     }
 
-    .controls {
-      display: none;
-      margin-top: 14px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfe;
-    }
-
-    .controls.visible {
-      display: block;
-    }
-
-    .control-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: center;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--accent);
-    }
-
-    .actions {
-      margin-top: 14px;
+    .toolbar {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       align-items: center;
     }
 
     .button {
-      appearance: none;
+      min-height: 42px;
       border: 0;
       border-radius: 8px;
-      background: var(--accent);
-      color: white;
+      padding: 10px 15px;
+      background: var(--blue);
+      color: #fff;
       font-size: 14px;
-      font-weight: 700;
-      padding: 11px 16px;
+      font-weight: 800;
       cursor: pointer;
     }
 
+    .button:hover {
+      filter: brightness(0.96);
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
     .button.secondary {
-      background: #e9edf3;
+      background: #e8edf4;
       color: var(--text);
+    }
+
+    .threshold-card {
+      display: none;
+      min-width: 260px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .threshold-card.visible {
+      display: grid;
+      gap: 9px;
+    }
+
+    .threshold-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #threshold-value {
+      color: var(--text);
+      font-size: 16px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .status {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status.loading {
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    .status.error {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--red-soft);
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    .status.success {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .preview-shell {
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0b1220;
+    }
+
+    .preview-shell.visible {
+      display: block;
+    }
+
+    .preview-label {
+      padding: 10px 12px;
+      color: #cbd5e1;
+      background: #111827;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
     }
 
     .preview,
     .result-image {
-      display: none;
       width: 100%;
+      max-height: 430px;
       object-fit: contain;
-      border: 1px solid var(--line);
-      border-radius: 8px;
+      display: block;
       background: #fff;
-    }
-
-    .preview {
-      margin-top: 16px;
-      max-height: 360px;
     }
 
     .result-image {
-      margin-top: 14px;
-      max-height: 420px;
+      display: none;
     }
 
-    .status {
-      min-height: 28px;
-      margin-top: 16px;
+    .result-image.visible {
+      display: block;
+    }
+
+    .results-panel {
+      display: grid;
+      gap: 12px;
+    }
+
+    .result-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-card {
+      min-height: 74px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      display: grid;
+      align-content: center;
+      gap: 5px;
+    }
+
+    .summary-label {
       color: var(--muted);
-      line-height: 1.5;
+      font-size: 12px;
+      font-weight: 700;
     }
 
-    .status.loading { color: var(--accent); }
-    .status.error { color: var(--danger); }
-    .status.success { color: var(--success); }
+    .summary-value {
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
 
-    .results {
+    .result-list {
       display: grid;
       gap: 10px;
-      margin-top: 14px;
     }
 
-    .result {
+    .result-item {
       display: grid;
-      gap: 8px;
-      padding: 12px 14px;
+      gap: 9px;
+      padding: 13px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
     }
 
-    .result.top {
-      border-color: rgba(24, 134, 75, 0.45);
-      background: var(--success-soft);
+    .result-item.top {
+      border-color: rgba(21, 128, 61, 0.36);
+      background: var(--green-soft);
     }
 
     .result-head {
@@ -244,6 +482,17 @@
       gap: 12px;
       align-items: baseline;
       font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .result-label {
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .score {
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .result-detail {
@@ -256,136 +505,726 @@
       height: 8px;
       overflow: hidden;
       border-radius: 999px;
-      background: #eef2f7;
+      background: #e7edf5;
     }
 
     .result-bar > span {
       display: block;
       height: 100%;
-      background: var(--accent);
+      width: 0;
+      background: var(--blue);
     }
 
-    .notes {
-      margin: 0;
-      padding-left: 18px;
+    .empty-state {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
       color: var(--muted);
-      line-height: 1.75;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
-    .footer-note {
-      margin-top: 16px;
+    .insight-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .insight-list li {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.65;
+      line-height: 1.6;
     }
 
-    @media (max-width: 860px) {
-      .layout {
+    .insight-list strong {
+      color: var(--text);
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stack-row {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .stack-row:last-child {
+      border-bottom: 0;
+    }
+
+    .stack-label {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .stack-value {
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 980px) {
+      .topbar-inner,
+      .workspace {
         grid-template-columns: 1fr;
+      }
+
+      .system-badges {
+        justify-content: flex-start;
+      }
+
+      .overview {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 23px;
+      }
+
+      .content,
+      .topbar-inner {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .overview,
+      .result-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-header,
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .mode-tabs,
+      .threshold-card,
+      .button,
+      .button-row {
+        width: 100%;
+      }
+
+      .mode-tab {
+        flex: 1;
+      }
+
+      .stack-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+    }
+
+    /* Product-style refinements: strong hierarchy, quiet surfaces, clear states. */
+    body {
+      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    .topbar {
+      background: var(--surface-strong);
+      border-bottom: 3px solid #d6a85e;
+    }
+
+    .topbar-inner {
+      min-height: 128px;
+      padding-top: 25px;
+      padding-bottom: 24px;
+    }
+
+    .brand {
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 14px;
+      align-items: start;
+    }
+
+    .brand-copy {
+      min-width: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      margin-top: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      background: #2a8278;
+      color: #f8e5b7;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+    }
+
+    .brand-kicker {
+      color: #e6c477;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+    }
+
+    h1 {
+      font-size: 34px;
+      letter-spacing: 0;
+    }
+
+    .brand-summary {
+      max-width: 690px;
+      color: #b8c9c3;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .system-badges {
+      align-self: center;
+      max-width: 300px;
+    }
+
+    .badge {
+      min-height: 28px;
+      border-color: rgba(230, 196, 119, 0.24);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #d9e8e2;
+      font-size: 11px;
+    }
+
+    .content {
+      max-width: 1240px;
+      padding-top: 26px;
+      gap: 20px;
+    }
+
+    .overview {
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 92px;
+      padding: 13px 15px;
+      border-radius: 10px;
+      box-shadow: none;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+
+    .metric-value {
+      font-size: 17px;
+    }
+
+    .metric-note {
+      font-size: 11px;
+    }
+
+    .resource-alert {
+      padding: 11px 14px;
+      border: 1px solid #e4c2b8;
+      border-radius: 8px;
+      background: var(--red-soft);
+      color: var(--red);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .workspace {
+      grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
+      gap: 20px;
+    }
+
+    .panel {
+      border-color: var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      min-height: 78px;
+      padding: 18px 20px;
+    }
+
+    .panel-title {
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+
+    .panel-subtitle {
+      font-size: 12px;
+    }
+
+    .mode-tabs {
+      padding: 3px;
+      border-radius: 7px;
+      background: #eef3ee;
+    }
+
+    .mode-tab {
+      min-width: 94px;
+      padding: 9px 13px;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+
+    .mode-tab:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .mode-tab.active {
+      background: var(--blue);
+      box-shadow: 0 3px 8px rgba(21, 122, 112, 0.2);
+    }
+
+    .panel-body {
+      padding: 20px;
+      gap: 18px;
+    }
+
+    .dropzone {
+      min-height: 248px;
+      border: 1px dashed #a9c5bc;
+      border-radius: 10px;
+      background: #fbfcf8;
+    }
+
+    .dropzone.disabled {
+      cursor: not-allowed;
+      opacity: 0.68;
+    }
+
+    .dropzone::before {
+      content: "↑";
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 13px;
+      border: 1px solid #b9d5cc;
+      border-radius: 50%;
+      background: var(--blue-soft);
+      color: var(--blue);
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .dropzone:focus-visible,
+    .mode-tab:focus-visible,
+    .button:focus-visible {
+      outline: 3px solid rgba(214, 168, 94, 0.52);
+      outline-offset: 3px;
+    }
+
+    .dropzone-title {
+      font-size: 17px;
+    }
+
+    .dropzone-copy {
+      max-width: 360px;
+      margin-right: auto;
+      margin-left: auto;
+      font-size: 13px;
+    }
+
+    .toolbar {
+      padding-top: 2px;
+    }
+
+    .button {
+      min-height: 40px;
+      border-radius: 7px;
+      padding: 9px 14px;
+      font-size: 13px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .button-icon {
+      display: inline-block;
+      margin-right: 5px;
+      font-size: 16px;
+      line-height: 0;
+      vertical-align: -1px;
+    }
+
+    .button:hover:not(:disabled) {
+      filter: none;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(21, 122, 112, 0.16);
+    }
+
+    .button.secondary {
+      background: #edf1ed;
+      color: #38504a;
+    }
+
+    .threshold-card {
+      min-width: 268px;
+      border-radius: 8px;
+      background: #f1f5f0;
+    }
+
+    .status {
+      font-size: 13px;
+    }
+
+    .preview-shell {
+      border-color: #263a36;
+      border-radius: 10px;
+    }
+
+    .preview-label {
+      padding: 11px 14px;
+      background: #20332f;
+      color: #d5e2dd;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .summary-card,
+    .result-item,
+    .empty-state,
+    .insight-list li {
+      border-radius: 8px;
+    }
+
+    .summary-card {
+      min-height: 70px;
+      background: #f4f7f2;
+    }
+
+    .summary-value {
+      font-size: 17px;
+    }
+
+    .result-item.top {
+      border-color: rgba(37, 121, 86, 0.35);
+      background: var(--green-soft);
+    }
+
+    .result-bar {
+      height: 6px;
+      background: #e2eae2;
+    }
+
+    .result-bar > span {
+      background: var(--blue);
+    }
+
+    .insight-list {
+      gap: 7px;
+    }
+
+    .insight-list li {
+      padding: 10px 12px;
+      background: #f8faf6;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .stack {
+      padding-top: 2px;
+    }
+
+    .stack-row {
+      padding: 8px 0;
+      font-size: 12px;
+    }
+
+    .technical-details {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .technical-details summary {
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .technical-details[open] summary {
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 980px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar-inner {
+        min-height: 0;
+      }
+
+      .brand {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-mark {
+        display: none;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .system-badges {
+        max-width: none;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="masthead">
-      <h1>AI 图像识别系统</h1>
-      <div class="meta">
-        数据集：{{ data_root }} · 类别数：{{ class_count }} · 分类模型：{{ model_path }}<br />
-        检测模型：{{ detector_model }} · 默认检测阈值：{{ detection_threshold }}
+  <main class="app">
+    <section class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">FV</div>
+          <div class="brand-copy">
+            <div class="brand-kicker">FELINE VISION / LOCAL AI LAB</div>
+            <h1>宠物图像识别与目标检测系统</h1>
+            <p class="brand-summary">
+              一个面向模型演示与快速验证的本地视觉工作台，支持宠物细分类与通用目标检测。
+            </p>
+          </div>
+        </div>
+        <div class="system-badges" aria-label="项目技术栈">
+          <span class="badge">Flask API</span>
+          <span class="badge">MobileNetV3</span>
+          <span class="badge">YOLOv8n</span>
+          <span class="badge">OpenCV</span>
+        </div>
       </div>
-    </header>
+    </section>
 
-    <div class="tabs" role="tablist" aria-label="识别模式">
-      <button id="tab-classify" class="tab active" type="button" data-mode="classify">图像分类</button>
-      <button id="tab-detect" class="tab" type="button" data-mode="detect">目标检测</button>
-    </div>
+    <section class="content">
+      <div class="overview" aria-label="系统概览">
+        <div class="metric">
+          <div class="metric-label">CLASSIFIER</div>
+          <div class="metric-value {{ '' if classification_ready else 'is-missing' }}">{{ 'READY' if classification_ready else 'SETUP REQUIRED' }}</div>
+          <div class="metric-note">MobileNetV3 · {{ class_count if classification_ready else '—' }} 类</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">DETECTOR</div>
+          <div class="metric-value {{ '' if detection_ready else 'is-missing' }}">{{ 'READY' if detection_ready else 'SETUP REQUIRED' }}</div>
+          <div class="metric-note">YOLOv8n · OpenCV rendering</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">INPUT</div>
+          <div class="metric-value">JPG / PNG / WEBP</div>
+          <div class="metric-note">单张图片 · 最大 16 MB</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">INFERENCE</div>
+          <div class="metric-value">LOCAL</div>
+          <div class="metric-note">模型在本机执行，不上传到云端</div>
+        </div>
+      </div>
 
-    <div class="layout">
-      <section class="panel">
-        <h2 id="mode-title">图像分类</h2>
-        <div id="dropzone" class="dropzone">
-          <div>
-            <strong id="drop-title">拖拽图片到这里，或点击选择</strong>
-            <p id="drop-copy">上传后会自动预览，并调用分类接口返回 Top-3 类别。</p>
+      {% if not classification_ready or not detection_ready %}
+      <div class="resource-alert" role="status">
+        {% if not classification_ready %}分类资源：{{ classification_message }}{% endif %}
+        {% if not classification_ready and not detection_ready %}<br />{% endif %}
+        {% if not detection_ready %}检测资源：{{ detection_message }}{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="workspace">
+        <section class="panel" aria-labelledby="workspace-title">
+          <header class="panel-header">
+            <div>
+              <h2 id="workspace-title" class="panel-title">推理工作台</h2>
+              <p id="mode-copy" class="panel-subtitle">上传图片后返回 Top-3 分类结果。</p>
+            </div>
+            <div class="mode-tabs" role="tablist" aria-label="识别模式">
+                <button id="tab-classify" class="mode-tab active" type="button" data-mode="classify" role="tab" aria-selected="true">图像分类</button>
+                <button id="tab-detect" class="mode-tab" type="button" data-mode="detect" role="tab" aria-selected="false">目标检测</button>
+            </div>
+          </header>
+
+          <div class="panel-body">
+            <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="选择图片">
+              <div>
+                <p id="drop-title" class="dropzone-title">选择一张图片开始识别</p>
+                <p id="drop-copy" class="dropzone-copy">支持 JPG、PNG、BMP、WEBP，文件会临时保存到 static/uploads。</p>
+                <div id="file-meta" class="file-meta"></div>
+              </div>
+            </div>
+
+            <input id="file-input" type="file" accept=".jpg,.jpeg,.png,.bmp,.webp,image/jpeg,image/png,image/bmp,image/webp" />
+
+            <div class="toolbar">
+              <div class="button-row">
+                <button id="choose-btn" class="button" type="button"><span class="button-icon" aria-hidden="true">+</span>选择图片</button>
+                <button id="rerun-btn" class="button secondary" type="button" disabled><span class="button-icon" aria-hidden="true">↻</span>重新运行</button>
+                <button id="clear-btn" class="button secondary" type="button"><span class="button-icon" aria-hidden="true">×</span>清空</button>
+              </div>
+
+              <div id="detection-controls" class="threshold-card">
+                <div class="threshold-head">
+                  <label for="threshold">检测置信度阈值</label>
+                  <strong id="threshold-value">0.5</strong>
+                </div>
+                <input id="threshold" type="range" min="0.1" max="0.9" step="0.1" value="{{ detection_threshold }}" />
+              </div>
+            </div>
+
+            <div id="status" class="status" aria-live="polite"></div>
+
+            <div id="preview-shell" class="preview-shell">
+              <div class="preview-label">
+                <span id="preview-title">原始图片</span>
+                <span id="preview-mode">分类预览</span>
+              </div>
+              <img id="preview" class="preview" alt="上传图片预览" />
+              <img id="result-image" class="result-image" alt="目标检测画框结果" />
+            </div>
           </div>
-        </div>
+        </section>
 
-        <input id="file-input" type="file" accept="image/*" />
+        <aside class="panel" aria-labelledby="results-title">
+          <header class="panel-header">
+            <div>
+              <h2 id="results-title" class="panel-title">结果面板</h2>
+              <p id="results-copy" class="panel-subtitle">等待上传图片。</p>
+            </div>
+          </header>
 
-        <div id="detection-controls" class="controls">
-          <div class="control-row">
-            <label for="threshold">检测置信度阈值</label>
-            <strong id="threshold-value">0.5</strong>
+          <div class="panel-body results-panel">
+            <div id="result-summary" class="result-summary">
+              <div class="summary-card">
+                <span class="summary-label">当前模式</span>
+                <strong id="summary-mode" class="summary-value">图像分类</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label">输出状态</span>
+                <strong id="summary-count" class="summary-value">待运行</strong>
+              </div>
+            </div>
+
+            <div id="results" class="result-list">
+              <div class="empty-state">上传图片后，这里会展示分类概率或检测框信息。</div>
+            </div>
+
+            <ul class="insight-list">
+              <li><strong>分类</strong>：判断整张图片最像哪个宠物类别，并返回 Top-3 概率。</li>
+              <li><strong>检测</strong>：定位图片中的目标，返回类别、置信度和带框结果。</li>
+              <li><strong>提示</strong>：降低阈值可能增加检测数量，也可能带来更多误检。</li>
+            </ul>
+
+            <details class="technical-details">
+              <summary>查看运行信息</summary>
+              <div class="stack" aria-label="运行配置">
+                <div class="stack-row">
+                  <span class="stack-label">分类接口</span>
+                  <span class="stack-value">POST /predict</span>
+                </div>
+                <div class="stack-row">
+                  <span class="stack-label">检测接口</span>
+                  <span class="stack-value">POST /detect</span>
+                </div>
+                <div class="stack-row">
+                  <span class="stack-label">默认阈值</span>
+                  <span class="stack-value">{{ detection_threshold }}</span>
+                </div>
+                <div class="stack-row">
+                  <span class="stack-label">数据目录</span>
+                  <span class="stack-value">{{ data_root }}</span>
+                </div>
+              </div>
+            </details>
           </div>
-          <input id="threshold" type="range" min="0.1" max="0.9" step="0.1" value="{{ detection_threshold }}" />
-        </div>
-
-        <div class="actions">
-          <button id="choose-btn" class="button" type="button">选择图片</button>
-          <button id="clear-btn" class="button secondary" type="button">清空</button>
-        </div>
-
-        <img id="preview" class="preview" alt="上传图片预览" />
-        <div id="status" class="status"></div>
-        <img id="result-image" class="result-image" alt="目标检测画框结果" />
-        <div id="results" class="results"></div>
-      </section>
-
-      <aside class="panel">
-        <h2>本课系统闭环</h2>
-        <ol class="notes">
-          <li>分类 Tab 调用 Flask 的 <code>/predict</code>，返回 Top-3 类别。</li>
-          <li>检测 Tab 调用 Flask 的 <code>/detect</code>，返回检测框、类别和带框图片。</li>
-          <li>分类模型和检测模型都使用单例思想，避免每次请求重复加载。</li>
-          <li>检测阈值越低，检测框可能越多；阈值越高，结果更严格但可能漏检。</li>
-        </ol>
-        <div class="footer-note">
-          第七课的重点不是换一个网页样式，而是把分类和检测两种 AI 能力接入同一个 Web 系统，并完成上传、推理、结果渲染和错误处理的闭环。
-        </div>
-      </aside>
-    </div>
-  </div>
+        </aside>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const tabs = Array.from(document.querySelectorAll('.mode-tab'));
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const chooseBtn = document.getElementById('choose-btn');
+    const rerunBtn = document.getElementById('rerun-btn');
     const clearBtn = document.getElementById('clear-btn');
     const preview = document.getElementById('preview');
+    const previewShell = document.getElementById('preview-shell');
+    const previewMode = document.getElementById('preview-mode');
+    const resultImage = document.getElementById('result-image');
     const statusBox = document.getElementById('status');
     const resultsBox = document.getElementById('results');
-    const resultImage = document.getElementById('result-image');
-    const modeTitle = document.getElementById('mode-title');
+    const resultsCopy = document.getElementById('results-copy');
+    const modeCopy = document.getElementById('mode-copy');
+    const dropTitle = document.getElementById('drop-title');
     const dropCopy = document.getElementById('drop-copy');
+    const fileMeta = document.getElementById('file-meta');
     const detectionControls = document.getElementById('detection-controls');
     const threshold = document.getElementById('threshold');
     const thresholdValue = document.getElementById('threshold-value');
+    const summaryMode = document.getElementById('summary-mode');
+    const summaryCount = document.getElementById('summary-count');
+    const classifierClassCount = {{ class_count|int }};
 
     let currentMode = 'classify';
     let selectedFile = null;
+    let isRunning = false;
 
     const modeConfig = {
       classify: {
-        title: '图像分类',
-        copy: '上传后会自动预览，并调用分类接口返回 Top-3 类别。',
-        loading: '分类识别中...',
-        success: '分类完成'
+        label: '图像分类',
+        copy: '上传图片后返回 Top-3 分类结果。',
+        drop: '选择一张宠物图片进行分类',
+        preview: '分类预览',
+        loading: '正在调用 MobileNetV3 分类模型...',
+        success: '分类完成',
+        empty: '上传图片后，这里会展示 Top-3 分类概率。'
       },
       detect: {
-        title: '目标检测',
-        copy: '上传后会调用 YOLOv8 检测接口，返回带框图片和检测列表。',
-        loading: '目标检测中...',
-        success: '检测完成'
+        label: '目标检测',
+        copy: '上传图片后返回检测框、类别、置信度和带框图片。',
+        drop: '选择一张包含常见物体的图片进行检测',
+        preview: '检测结果',
+        loading: '正在调用 YOLOv8 目标检测模型...',
+        success: '检测完成',
+        empty: '上传图片后，这里会展示检测目标列表。'
       }
     };
 
     function switchMode(mode) {
       currentMode = mode;
-      tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
-      modeTitle.textContent = modeConfig[mode].title;
-      dropCopy.textContent = modeConfig[mode].copy;
+      tabs.forEach((tab) => {
+        const isActive = tab.dataset.mode === mode;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+      });
+      modeCopy.textContent = modeConfig[mode].copy;
+      dropTitle.textContent = modeConfig[mode].drop;
+      dropCopy.textContent = mode === 'detect'
+        ? '调节阈值可以控制检测结果的严格程度。'
+        : classifierClassCount > 0
+          ? `分类模型会在 ${classifierClassCount} 个宠物类别中返回最可能的结果。`
+          : '分类模型会返回最可能的宠物类别。';
+      previewMode.textContent = modeConfig[mode].preview;
+      summaryMode.textContent = modeConfig[mode].label;
       detectionControls.classList.toggle('visible', mode === 'detect');
       resetResults();
       if (selectedFile) {
@@ -393,44 +1232,91 @@
       }
     }
 
+    function setRunning(running) {
+      isRunning = running;
+      chooseBtn.disabled = running;
+      rerunBtn.disabled = running || !selectedFile;
+      clearBtn.disabled = running;
+      threshold.disabled = running;
+      fileInput.disabled = running;
+      tabs.forEach((tab) => { tab.disabled = running; });
+      dropzone.classList.toggle('disabled', running);
+      dropzone.setAttribute('aria-disabled', String(running));
+    }
+
     function resetResults() {
       statusBox.textContent = '';
       statusBox.className = 'status';
-      resultsBox.innerHTML = '';
+      resultsCopy.textContent = selectedFile ? '等待运行结果。' : '等待上传图片。';
+      summaryCount.textContent = selectedFile ? '待运行' : '待上传';
+      resultsBox.innerHTML = `<div class="empty-state">${modeConfig[currentMode].empty}</div>`;
       resultImage.removeAttribute('src');
-      resultImage.style.display = 'none';
+      resultImage.classList.remove('visible');
+      preview.classList.remove('result-hidden');
     }
 
     function resetAll() {
       selectedFile = null;
       fileInput.value = '';
       preview.removeAttribute('src');
-      preview.style.display = 'none';
+      resultImage.removeAttribute('src');
+      resultImage.classList.remove('visible');
+      previewShell.classList.remove('visible');
+      fileMeta.classList.remove('visible');
+      fileMeta.textContent = '';
+      rerunBtn.disabled = true;
       resetResults();
     }
 
     function handleFile(file) {
+      if (!file || isRunning) {
+        return;
+      }
+      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.bmp', '.webp'];
+      const fileName = file && file.name ? file.name.toLowerCase() : '';
+      const isImage = file && (file.type.startsWith('image/') || allowedExtensions.some((ext) => fileName.endsWith(ext)));
+      if (!isImage) {
+        statusBox.textContent = '请选择 JPG、PNG、BMP 或 WEBP 图片。';
+        statusBox.className = 'status error';
+        return;
+      }
+      if (file.size > 16 * 1024 * 1024) {
+        statusBox.textContent = '图片不能超过 16 MB。';
+        statusBox.className = 'status error';
+        return;
+      }
+
       selectedFile = file;
+      fileMeta.textContent = `${file.name} · ${formatBytes(file.size)}`;
+      fileMeta.classList.add('visible');
+
       const reader = new FileReader();
       reader.onload = (event) => {
         preview.src = event.target.result;
-        preview.style.display = 'block';
+        previewShell.classList.add('visible');
       };
       reader.readAsDataURL(file);
       uploadFile(file);
     }
 
     function uploadFile(file) {
+      if (!file || isRunning) {
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       if (currentMode === 'detect') {
         formData.append('conf_threshold', threshold.value);
       }
 
+      setRunning(true);
       statusBox.textContent = modeConfig[currentMode].loading;
       statusBox.className = 'status loading';
-      resultsBox.innerHTML = '';
-      resultImage.style.display = 'none';
+      resultsCopy.textContent = '模型推理中。';
+      summaryCount.textContent = '运行中';
+      resultsBox.innerHTML = '<div class="empty-state">正在等待后端返回结果。</div>';
+      resultImage.classList.remove('visible');
 
       fetch(currentMode === 'detect' ? '/detect' : '/predict', {
         method: 'POST',
@@ -441,6 +1327,8 @@
         if (!ok || payload.error) {
           statusBox.textContent = payload.error || '识别失败';
           statusBox.className = 'status error';
+          resultsCopy.textContent = '后端返回错误。';
+          summaryCount.textContent = '失败';
           return;
         }
 
@@ -455,56 +1343,84 @@
       .catch((error) => {
         statusBox.textContent = `请求失败：${error.message}`;
         statusBox.className = 'status error';
+        resultsCopy.textContent = '请求未完成。';
+        summaryCount.textContent = '失败';
+      })
+      .finally(() => {
+        setRunning(false);
       });
     }
 
     function renderClassification(payload) {
-      resultsBox.innerHTML = payload.results.map((item, index) => {
-        const percent = Math.max(0, Math.min(100, item.score));
-        return `
-          <div class="result ${index === 0 ? 'top' : ''}">
-            <div class="result-head">
-              <strong>${index + 1}. ${escapeHtml(item.label)}</strong>
-              <span>${percent.toFixed(2)}%</span>
-            </div>
-            <div class="result-bar"><span style="width:${percent}%"></span></div>
-          </div>
-        `;
-      }).join('');
+      const results = payload.results || [];
+      resultsCopy.textContent = results.length ? 'Top-K 分类结果已返回。' : '没有分类结果。';
+      summaryCount.textContent = `${results.length} 个类别`;
+      resultImage.classList.remove('visible');
+      resultsBox.innerHTML = results.length
+        ? results.map((item, index) => renderResultItem({
+            rank: index + 1,
+            label: item.label,
+            score: item.score,
+            detail: index === 0 ? 'Top-1 预测结果' : '候选分类结果',
+            top: index === 0
+          })).join('')
+        : '<div class="empty-state">没有返回分类结果。</div>';
     }
 
     function renderDetections(payload) {
-      resultImage.src = payload.image_url;
-      resultImage.style.display = 'block';
+      const detections = payload.detections || [];
+      resultsCopy.textContent = detections.length
+        ? `检测到 ${detections.length} 个目标。`
+        : '没有检测到高置信度目标。';
+      summaryCount.textContent = `${detections.length} 个目标`;
 
-      if (!payload.detections.length) {
+      resultImage.src = payload.image_url;
+      resultImage.classList.add('visible');
+      previewMode.textContent = '原图与检测结果';
+
+      if (!detections.length) {
         resultsBox.innerHTML = `
-          <div class="result">
-            <div class="result-head">
-              <strong>未检测到高置信度目标</strong>
-              <span>阈值 ${payload.conf_threshold}</span>
-            </div>
-            <div class="result-detail">可以尝试降低阈值，例如 0.3，再上传同一张图片观察变化。</div>
+          <div class="empty-state">
+            当前阈值为 ${escapeHtml(payload.conf_threshold)}。可以降低阈值后重新运行，或更换包含常见目标的清晰图片。
           </div>
         `;
         return;
       }
 
-      resultsBox.innerHTML = payload.detections.map((item, index) => {
-        const percent = Math.max(0, Math.min(100, item.confidence));
-        return `
-          <div class="result ${index === 0 ? 'top' : ''}">
-            <div class="result-head">
-              <strong>${index + 1}. ${escapeHtml(item.label)}</strong>
-              <span>${percent.toFixed(2)}%</span>
-            </div>
-            <div class="result-detail">
-              框坐标：(${item.x1}, ${item.y1}) - (${item.x2}, ${item.y2})
-            </div>
-            <div class="result-bar"><span style="width:${percent}%"></span></div>
+      resultsBox.innerHTML = detections.map((item, index) => renderResultItem({
+        rank: index + 1,
+        label: item.label,
+        score: item.confidence,
+        detail: `框坐标：(${item.x1}, ${item.y1}) - (${item.x2}, ${item.y2})`,
+        top: index === 0
+      })).join('');
+    }
+
+    function renderResultItem({ rank, label, score, detail, top }) {
+      const percent = Math.max(0, Math.min(100, Number(score) || 0));
+      return `
+        <div class="result-item ${top ? 'top' : ''}">
+          <div class="result-head">
+            <span class="result-label">${rank}. ${escapeHtml(label)}</span>
+            <span class="score">${percent.toFixed(2)}%</span>
           </div>
-        `;
-      }).join('');
+          <div class="result-detail">${escapeHtml(detail)}</div>
+          <div class="result-bar"><span style="width:${percent}%"></span></div>
+        </div>
+      `;
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes)) {
+        return '';
+      }
+      if (bytes < 1024) {
+        return `${bytes} B`;
+      }
+      if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(1)} KB`;
+      }
+      return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
     }
 
     function escapeHtml(value) {
@@ -531,7 +1447,17 @@
     });
 
     chooseBtn.addEventListener('click', () => fileInput.click());
-    dropzone.addEventListener('click', () => fileInput.click());
+    rerunBtn.addEventListener('click', () => {
+      if (selectedFile) {
+        uploadFile(selectedFile);
+      }
+    });
+    clearBtn.addEventListener('click', resetAll);
+    dropzone.addEventListener('click', () => {
+      if (!isRunning) {
+        fileInput.click();
+      }
+    });
     dropzone.addEventListener('dragover', (event) => {
       event.preventDefault();
       dropzone.classList.add('dragover');
@@ -540,19 +1466,27 @@
     dropzone.addEventListener('drop', (event) => {
       event.preventDefault();
       dropzone.classList.remove('dragover');
+      if (isRunning) {
+        return;
+      }
       const file = event.dataTransfer.files[0];
-      if (file) {
-        handleFile(file);
+      handleFile(file);
+    });
+    dropzone.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        if (!isRunning) {
+          fileInput.click();
+        }
       }
     });
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
-      if (file) {
-        handleFile(file);
-      }
+      handleFile(file);
     });
-    clearBtn.addEventListener('click', resetAll);
+
     thresholdValue.textContent = threshold.value;
+    resetResults();
   </script>
 </body>
 </html>

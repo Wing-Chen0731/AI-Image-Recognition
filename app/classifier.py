@@ -4,16 +4,22 @@ classifier.py - 图像分类推理
 import os
 import torch
 import cv2
-import json
-import requests
 from torchvision import transforms
-from model_loader import MobileNetV3Loader
-from exceptions import ModelLoadException, ImageLoadException
+
+try:
+    from app.model_loader import MobileNetV3Loader
+    from app.exceptions import ModelLoadException, ImageLoadException
+except ModuleNotFoundError:  # Allows: python app/classifier.py
+    from model_loader import MobileNetV3Loader
+    from exceptions import ModelLoadException, ImageLoadException
 
 
-# 下载 ImageNet 1000 类标签
-LABELS_URL = "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels/master/imagenet-simple-labels.json"
-imagenet_classes = json.loads(requests.get(LABELS_URL).text)
+def load_imagenet_classes():
+    """Read labels bundled in TorchVision metadata without an import-time request."""
+
+    from torchvision.models import MobileNet_V3_Large_Weights
+
+    return MobileNet_V3_Large_Weights.IMAGENET1K_V1.meta["categories"]
 
 
 def load_and_predict(image_path: str):
@@ -21,20 +27,20 @@ def load_and_predict(image_path: str):
 
     # 前置条件检查
     if not os.path.exists(image_path):
-        raise FileNotFoundError(f"❌ 图片不存在: {image_path}")
+        raise FileNotFoundError(f"Image not found: {image_path}")
 
     # 1. 加载模型
     loader = MobileNetV3Loader()
     try:
         model = loader.load_model()
     except ModelLoadException as e:
-        print(f"❌ {e}")
+        print(f"ERROR: {e}")
         return None
 
     # 2. 用 OpenCV 读取图片
     img = cv2.imread(image_path)
     if img is None:
-        raise ImageLoadException(f"❌ 无法读取图片: {image_path}")
+        raise ImageLoadException(f"Unable to read image: {image_path}")
 
     # 3. 图像预处理
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -55,13 +61,14 @@ def load_and_predict(image_path: str):
         probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
 
     # 5. 取 Top-5
-    top5_prob, top5_idx = torch.topk(probabilities, 5)
+    imagenet_classes = load_imagenet_classes()
+    top5_prob, top5_idx = torch.topk(probabilities, min(5, len(imagenet_classes)))
 
     results = []
-    print("\n📊 识别结果 (Top-5):")
+    print("\nClassification results (Top-5):")
     print("-" * 40)
-    for i in range(5):
-        label = imagenet_classes[top5_idx[i]]
+    for i in range(len(top5_idx)):
+        label = imagenet_classes[int(top5_idx[i])]
         score = top5_prob[i].item() * 100
         print(f"  {i+1}. {label:30s} {score:6.2f}%")
         results.append((label, score))

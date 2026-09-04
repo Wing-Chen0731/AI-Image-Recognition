@@ -126,7 +126,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=3, help="Training epochs.")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size.")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Adam learning rate.")
+    parser.add_argument("--lr", type=float, default=1e-3, help="AdamW learning rate.")
+    parser.add_argument(
+        "--weight-decay",
+        type=float,
+        default=1e-4,
+        help="AdamW weight decay.",
+    )
+    parser.add_argument(
+        "--label-smoothing",
+        type=float,
+        default=0.1,
+        help="Cross-entropy label smoothing between 0 and 1.",
+    )
     parser.add_argument("--num-workers", type=int, default=0, help="DataLoader workers.")
     parser.add_argument(
         "--num-classes",
@@ -140,6 +152,12 @@ def parse_args() -> argparse.Namespace:
         help="Where to save the model state_dict.",
     )
     parser.add_argument(
+        "--resume",
+        type=Path,
+        default=None,
+        help="Optional checkpoint to continue fine-tuning from.",
+    )
+    parser.add_argument(
         "--unfreeze-features",
         action="store_true",
         help="Train the feature extractor as well as the classifier head.",
@@ -149,6 +167,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.epochs < 1:
+        raise ValueError("--epochs must be at least 1.")
+    if args.batch_size < 1:
+        raise ValueError("--batch-size must be at least 1.")
+    if args.lr <= 0:
+        raise ValueError("--lr must be greater than 0.")
+    if args.weight_decay < 0:
+        raise ValueError("--weight-decay cannot be negative.")
+    if not 0.0 <= args.label_smoothing < 1.0:
+        raise ValueError("--label-smoothing must be between 0 and 1.")
+
     data_dir = Path(args.data_dir)
     validate_data_dir(data_dir)
 
@@ -180,20 +209,39 @@ def main() -> None:
     model = build_finetune_model(
         num_classes=num_classes,
         freeze_features=not args.unfreeze_features,
+        pretrained=args.resume is None,
     ).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(
+    if args.resume is not None:
+        if not args.resume.is_file():
+            raise FileNotFoundError(f"Resume checkpoint not found: {args.resume}")
+        try:
+            state_dict = torch.load(args.resume, map_location="cpu", weights_only=True)
+        except TypeError:  # Older PyTorch versions do not support weights_only.
+            state_dict = torch.load(args.resume, map_location="cpu")
+        model.load_state_dict(state_dict)
+
+    criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
+    optimizer = optim.AdamW(
         (param for param in model.parameters() if param.requires_grad),
         lr=args.lr,
+        weight_decay=args.weight_decay,
+    )
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=args.epochs,
+        eta_min=args.lr * 0.05,
     )
 
     print(f"Device: {device}")
     print(f"Classes: {train_set.class_to_idx}")
     print(f"Training samples: {len(train_set)}")
     print(f"Validation samples: {len(val_set)}")
+    if args.resume is not None:
+        print(f"Resuming from: {args.resume}")
 
     best_val_acc = 0.0
     output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(1, args.epochs + 1):
         train_loss, train_acc = train_epoch(
@@ -211,6 +259,7 @@ def main() -> None:
             best_val_acc = val_acc
             torch.save(model.state_dict(), output_path)
             print(f"Saved model to {output_path}")
+        scheduler.step()
 
 
 if __name__ == "__main__":

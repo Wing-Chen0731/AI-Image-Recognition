@@ -1,8 +1,8 @@
-torch
-torchvision
-tqdm
-opencv-python
-requests
-Pillow
-Flask
-ultralytics
+torch>=2.0,<3.0
+torchvision>=0.15,<1.0
+tqdm>=4.65,<5.0
+opencv-python>=4.8,<5.0
+requests>=2.31,<3.0
+Pillow>=10.0,<12.0
+Flask>=3.0,<4.0
+ultralytics>=8.2,<9.0
