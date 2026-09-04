@@ -257,5 +257,14 @@ Important Lesson 7 documents:
 - `courseware/lesson7_code_walkthrough.md`
 - `courseware/lesson7_homework.md`
 - `courseware/lesson7_practice_manual.md`
+- `courseware/project_portfolio_operation_manual.md`
+- `courseware/project_interview_guide.md`
+- `courseware/AI图像识别项目课堂讲义.docx`
+- `scripts/build_project_class_handout_docx.py`
 
 Use `lesson7_practice_manual.md` when students need a step-by-step self-practice guide.
+Use `project_portfolio_operation_manual.md` for the full portfolio reproduction,
+testing, troubleshooting, and interview demonstration procedure. Use
+`project_interview_guide.md` to prepare architecture explanations and technical
+follow-up questions. Use `AI图像识别项目课堂讲义.docx` when a concise Word handout
+is needed for classroom distribution.

@@ -19,6 +19,36 @@
 
 这个项目同时包含两个视觉任务。第六课完成的是图像分类：整张图片回答“这张图最像哪个类别”。第七课增加的是目标检测：回答“图片里有哪些目标、每个目标在哪里、模型有多确定”。两项能力共用同一个 Web 页面，但底层模型、输出形式和评价方法不同。
 
+### 文档阅读地图
+
+这份材料可以按照面试官追问的方向阅读，而不必从头背到尾：
+
+| 面试官关注方向 | 重点章节 | 应当给出的证据 |
+| --- | --- | --- |
+| 产品与业务价值 | 第一、二、十一章 | 可操作 Web 页面、分类与检测双工作流 |
+| 数据与模型 | 第四、五、六章 | 37 类映射、checkpoint、90.19% 验证准确率 |
+| 后端工程 | 第八、九、十四章 | API、异常分级、模型缓存、上传清理 |
+| 面向对象设计 | 第十章 | 抽象接口、具体实现、值对象、职责拆分 |
+| 测试与质量 | 第十三章 | 9 项自动化测试、真实接口和浏览器回归 |
+| 系统设计与扩展 | 第十四、十五章 | 当前边界、生产部署方案、模型演进路线 |
+| 项目表达 | 第十六至十八章 | 高频问答、30 秒/2 分钟/5 分钟脚本、简历描述 |
+
+### 当前可验证基线
+
+面试陈述必须以实际代码和测试结果为准。当前版本可验证的基线如下：
+
+- 分类架构：MobileNetV3-Large，输出 37 个 Oxford-IIIT Pet 品种。
+- 分类权重：`models/oxford_pet_mobilenet_epoch1.pth`，推理时离线加载。
+- 验证数据：1,478 张，Top-1 为 90.19%，正确 1,333 张。
+- 检测架构：Ultralytics YOLOv8n，使用仓库内 `yolov8n.pt`。
+- YOLO 训练状态：当前项目未对 YOLO 做自定义微调。
+- Web：Flask 提供 `/`、`/predict`、`/detect`。
+- 后处理：OpenCV 绘制检测框、标签和置信度并保存结果图。
+- 安全与稳定：16 MB 限制、图片内容验证、唯一文件名、错误分级、上传清理。
+- 自动化测试：当前 `test_*.py` 共 9 项通过。
+
+这组事实构成项目的“证据边界”。面试时可以解释未来规划，但必须用“下一步会做”“生产化时会增加”等表述，不能把规划描述成已经完成的功能。
+
 ## 一、项目一句话介绍
 
 这是一个基于 PyTorch、TorchVision、Flask、YOLOv8 和 OpenCV 的图像识别 Web 系统。系统保留了第六课基于 MobileNetV3 的 Oxford-IIIT Pet 宠物细分类能力，同时在第七课增加了基于预训练 YOLOv8n 的通用目标检测能力。用户可以在网页上选择图像分类或目标检测模式，上传图片后得到分类概率、目标类别、置信度、边界框和可视化结果。
@@ -82,6 +112,39 @@ Web 接口层
 
 前端层负责用户体验，不应该直接知道 MobileNetV3 的内部结构。Web 接口层负责请求校验、文件保存、调用模型和返回结果。模型层负责加载模型以及定义模型的统一使用方式。图像处理层负责 OpenCV 读图、画框、保存可视化图片。数据和环境层负责让项目具备可运行的输入、权重和依赖。
 
+从运行时容器看，系统可以表示为：
+
+```mermaid
+flowchart TB
+    Actor[用户 / 面试官] --> Browser[浏览器<br/>HTML + CSS + JavaScript]
+    Browser -->|HTTP multipart/form-data| Flask[Flask 应用<br/>路由、校验、编排]
+
+    subgraph Classification[分类子系统]
+        ClassLoader[FineTunedLoader]
+        MobileNet[MobileNetV3-Large<br/>37 类 checkpoint]
+        ClassMap[ImageFolder<br/>class_to_idx]
+        ClassLoader --> MobileNet
+        ClassMap --> MobileNet
+    end
+
+    subgraph Detection[检测子系统]
+        Detector[YOLOv8Detector]
+        YOLO[YOLOv8n<br/>通用预训练权重]
+        Value[DetectionResult<br/>值对象]
+        Draw[OpenCV<br/>绘制与保存]
+        Detector --> YOLO --> Value --> Draw
+    end
+
+    Flask --> Classification
+    Flask --> Detection
+    Flask --> Temp[static/uploads<br/>受控临时文件]
+    Temp --> Browser
+    Tests[自动化测试与评估脚本] --> Flask
+    Tests --> Classification
+```
+
+这张图中的关键设计不是“用了多少库”，而是职责方向清楚：浏览器不加载 PyTorch 权重；Flask 不负责学习视觉特征；MobileNet 不知道 HTTP；YOLO 不负责页面展示；OpenCV 不决定目标类别。职责分离使任一组件可以在保持接口契约的情况下替换。
+
 ### 3.2 主要文件说明
 
 `app/web_app.py` 是应用入口和协调中心。它创建 Flask 应用，注册 `/`、`/predict`、`/detect` 路由，读取数据集类别名称，缓存模型，保存上传图片，并把模型结果返回给前端。
@@ -97,6 +160,66 @@ Web 接口层
 `tests/test_env.py` 是环境检查脚本。它不训练模型，而是确认当前 Python 环境是否可以导入 PyTorch、TorchVision、Pillow、OpenCV、Flask 和 Ultralytics，并检查项目中的数据目录和模型文件。
 
 `requirements.txt` 描述项目依赖及版本范围。`README.md` 负责向使用者说明安装、启动、资源文件、数据格式和常见问题。
+
+### 3.3 模块依赖关系
+
+```mermaid
+flowchart LR
+    HTML[templates/index.html] --> Web[app/web_app.py]
+    Web --> ML[app/model_loader.py]
+    Web --> OD[app/object_detector.py]
+    Web --> PP[app/preprocess.py]
+    ML --> EX[app/exceptions.py]
+    OD --> EX
+    PP --> OD
+    FT[app/finetune.py] --> ML
+    FT --> TF[app/transforms.py]
+    EV[scripts/evaluate_classifier.py] --> ML
+    EV --> TF
+    TEST[tests/] --> Web
+    TEST --> ML
+```
+
+依赖箭头表达“谁知道谁”。例如 `preprocess.py` 可以知道 `DetectionResult` 的字段，因为它要读取坐标；`object_detector.py` 不应该反向导入 Flask，因为检测器应当可以脱离 Web 单独使用。若两个模块相互导入，通常意味着职责边界不清或者需要抽取更稳定的数据契约。
+
+### 3.4 应用启动生命周期
+
+```mermaid
+stateDiagram-v2
+    [*] --> ImportModules
+    ImportModules --> ConfigurePaths: 计算 PROJECT_ROOT
+    ConfigurePaths --> CreateFlask: 指定 templates 和 static
+    CreateFlask --> PrepareUploads: 创建并清理 uploads
+    PrepareUploads --> Listening: app.run 监听端口
+    Listening --> PageRequest: GET /
+    PageRequest --> ResourceStatus: 只检查资源，不加载大模型
+    ResourceStatus --> Listening
+    Listening --> FirstClassification: 首次 POST /predict
+    FirstClassification --> LoadClassifier: 缓存为空
+    LoadClassifier --> ClassifierCached
+    ClassifierCached --> Listening
+    Listening --> FirstDetection: 首次 POST /detect
+    FirstDetection --> LoadDetector: 缓存为空
+    LoadDetector --> DetectorCached
+    DetectorCached --> Listening
+```
+
+首页不直接加载大模型是有意设计。用户即使缺少权重，也应该先看到页面和资源诊断信息，而不是打开首页就得到 500。模型只在对应能力第一次被调用时加载，此后复用。这种方式叫懒加载；它优化的是启动体验和错误可诊断性，但第一次推理仍会比后续请求慢。
+
+### 3.5 关键设计决策与取舍
+
+| 决策 | 当前方案 | 主要收益 | 代价或局限 |
+| --- | --- | --- | --- |
+| 分类模型 | MobileNetV3-Large | 轻量、CPU 可运行、迁移学习成熟 | 细粒度类别仍受数据限制 |
+| 检测模型 | YOLOv8n 预训练权重 | 集成快、通用目标覆盖广 | 不是自定义宠物品种检测器 |
+| Web 框架 | Flask | 简洁、适合教学、接口透明 | 内置 server 不适合公网生产 |
+| 类别来源 | ImageFolder 目录排序 | 简单、无需额外标签数据库 | 目录变化会影响映射 |
+| 模型加载 | 首次请求懒加载并缓存 | 避免每次重新读权重 | 首次请求延迟更大 |
+| 检测输出 | 冻结 dataclass 值对象 | 契约明确、便于序列化 | 复杂任务需扩展字段 |
+| 上传存储 | 本地临时目录 | 本机演示简单直观 | 多实例和生产环境不适用 |
+| 检测阈值 | 每请求传递 | 无需重载模型、便于实验 | 需校验范围并明确默认值 |
+
+面试官真正关心的通常不是“为什么没有选择另一个热门框架”，而是选择是否与目标一致、是否知道代价、是否保留演进空间。回答时按“目标、方案、收益、局限、下一步”五步展开，比简单列技术名更有说服力。
 
 ## 四、数据集与分类任务
 
@@ -195,6 +318,58 @@ ImageNet 模型原本有自己的类别数量，例如 1000 类。当前数据�
 
 使用 `torch.no_grad()` 的原因是推理阶段不需要计算梯度。它可以减少显存或内存占用，也不必保存反向传播所需的中间结果。
 
+分类请求的时序可以进一步表示为：
+
+```mermaid
+sequenceDiagram
+    actor User as 用户
+    participant UI as 浏览器页面
+    participant API as Flask /predict
+    participant Guard as save_upload
+    participant Cache as get_model
+    participant Model as MobileNetV3
+
+    User->>UI: 选择图片
+    UI->>UI: 检查类型和大小并显示预览
+    UI->>API: POST multipart file
+    API->>Guard: 保存并验证真实图片内容
+    Guard-->>API: 唯一临时路径
+    API->>Cache: 请求分类模型
+    alt 首次分类请求
+        Cache->>Model: 构建 37 类结构并加载本地 checkpoint
+        Model-->>Cache: eval 模式模型
+    else 已有缓存
+        Cache-->>API: 复用模型对象
+    end
+    API->>Model: [1,3,224,224] Tensor
+    Model-->>API: 37 维 logits
+    API->>API: softmax + topk + 类别映射
+    API-->>UI: results 与 image_url
+    UI-->>User: Top-3、百分比与状态
+```
+
+这里要区分三种“输出”：神经网络直接输出的是 logits；Softmax 输出的是总和为 1 的相对分数；API 输出的是经过类别映射和百分比格式化后的业务 JSON。把三者混成“模型直接返回标签”会掩盖中间的重要转换。
+
+### 5.5.1 微调策略如何选择
+
+```mermaid
+flowchart TD
+    Start[已有 ImageNet 预训练模型] --> DataSize{自定义数据规模}
+    DataSize -->|很小| Head[冻结 features<br/>只训练分类头]
+    DataSize -->|中等且与自然图像接近| Partial[先训练头<br/>再小学习率解冻后层或全层]
+    DataSize -->|较大或领域差异明显| Full[全层微调<br/>严格监控验证集]
+    Head --> Check{验证集是否受限}
+    Partial --> Check
+    Full --> Check
+    Check -->|欠拟合| MoreCapacity[解冻更多层或训练更久]
+    Check -->|过拟合| Regularize[增强、权重衰减、早停、清洗数据]
+    Check -->|指标稳定提升| Candidate[保存最佳 candidate]
+    Candidate --> Regression[完整评估与 Web 回归]
+    Regression --> Publish[替换正式 checkpoint]
+```
+
+当前 90.19% checkpoint 的改进属于“从已有 checkpoint 继续全模型微调”：使用较小学习率 `0.0001`、AdamW、`0.0001` 权重衰减、`0.1` label smoothing 和 cosine annealing。它不是 LoRA。LoRA 是参数高效微调方法，常见于大语言模型和部分视觉 Transformer；本项目直接解冻并更新 MobileNetV3 的原参数。
+
 ### 5.6 为什么要保持预处理一致
 
 训练阶段和推理阶段必须使用相互匹配的预处理。如果训练时图片被归一化，而推理时没有归一化，模型看到的数值分布会发生变化，预测质量会下降。训练时如果使用中心裁剪，推理时也应该保持相似的尺寸和裁剪策略。
@@ -248,6 +423,25 @@ Ultralytics 的 YOLO 调用模型后会返回结果对象。每一个检测框�
 网页上的滑块把阈值发送给 `/detect`。后端通过 `parse_conf_threshold()` 将表单值转成浮点数，并验证它必须在 0 到 1 之间。`YOLOv8Detector.detect()` 接收本次请求的阈值，将它传给模型调用，并在结果转换时再次过滤。
 
 这里有两个层次：构造函数里的 `0.5` 是默认阈值；请求传入的 `0.3` 或 `0.7` 是本次推理使用的阈值。当前修复后，调整阈值只影响本次推理，不会重新创建 YOLO 模型对象。
+
+阈值控制链路如下：
+
+```mermaid
+flowchart LR
+    Slider[前端 range 滑块] --> Form[FormData<br/>conf_threshold]
+    Form --> Parse[parse_conf_threshold]
+    Parse --> Valid{"0 <= value <= 1"}
+    Valid -->|否| Error[HTTP 400 可读错误]
+    Valid -->|是| Detect[detector.detect]
+    Detect --> YOLO[YOLO conf 参数]
+    YOLO --> Boxes[候选 boxes]
+    Boxes --> Filter[结果转换时再次过滤]
+    Filter --> DTO[DetectionResult 列表]
+```
+
+为什么既传给 YOLO 又在转换时过滤？前者让模型框架在推理阶段减少低分结果，后者保护项目自己的输出契约，确保最终列表不包含低于调用阈值的对象。两层过滤不是训练，也不会改变权重。
+
+从指标角度看，阈值是 precision 与 recall 之间的业务取舍。降低阈值通常提高召回倾向，但可能增加误检；提高阈值通常提高结果纯度，但可能漏检。正确选择方式是在代表性验证数据上画 precision-recall 曲线或比较多个候选阈值，而不是只看一张演示图片。
 
 ### 6.5 为什么模型只加载一次
 
@@ -335,6 +529,31 @@ Flask 不负责训练模型，也不是模型本身。它是把模型能力包�
 
 接口返回的 `image_url` 指向带框图片，`source_image_url` 指向原始上传图片。前端在检测模式下显示带框结果，同时在下方列出类别、置信度和坐标。
 
+两个接口共享上传与错误处理，但调用不同模型：
+
+```mermaid
+flowchart TD
+    Request[浏览器上传请求] --> Route{请求路由}
+    Route -->|/predict| FileCheck1[save_upload]
+    Route -->|/detect| Threshold[解析阈值]
+    Threshold --> FileCheck2[save_upload]
+    FileCheck1 --> Classify[predict_image]
+    Classify --> TopK[softmax + Top-K]
+    TopK --> ClassJSON[分类 JSON]
+    FileCheck2 --> Detect[detect_image]
+    Detect --> Results[DetectionResult 列表]
+    Results --> OpenCV[draw_detections]
+    OpenCV --> DetectJSON[检测 JSON + 结果图 URL]
+    ClassJSON --> Frontend[前端渲染]
+    DetectJSON --> Frontend
+```
+
+### 8.4.1 API 契约为什么重要
+
+API 契约是前后端共同依赖的字段、类型、状态码和语义。分类前端预期 `results` 是数组，每一项包含字符串 `label` 和百分数 `score`；检测前端预期 `detections`、`count`、`image_url` 和 `conf_threshold`。如果后端把 `score` 从百分数改成 0 到 1 的小数而不更新前端，页面进度条会错误；如果把错误字段从 `error` 改名，前端可能只显示通用失败。
+
+因此测试不能只检查函数“有返回值”，还要检查 JSON 结构、字段类型、HTTP 状态码和静态图片可访问性。未来可以使用 Pydantic、OpenAPI 或 JSON Schema 将契约形式化，但当前项目通过清晰的构造代码和接口测试维护契约。
+
 ### 8.5 为什么返回 JSON
 
 JSON 是前后端之间通用、结构清晰、JavaScript 可以直接解析的数据格式。相比后端直接拼接 HTML，返回 JSON 可以让前端决定结果如何展示，也便于未来增加移动端、桌面端或其他调用方。
@@ -367,6 +586,27 @@ JSON 是前后端之间通用、结构清晰、JavaScript 可以直接解析的�
 - 500：未预期的服务器异常，同时在终端记录日志。
 
 面试官如果问“为什么不把异常全部暴露给用户”，回答是：内部异常可能包含本机路径、堆栈和实现细节，直接暴露会影响安全性和用户体验。对用户应该返回可操作的提示，对开发者则通过日志保留排查信息。
+
+异常处理决策如下：
+
+```mermaid
+flowchart TD
+    Failure[推理流程发生异常] --> Kind{异常类型}
+    Kind -->|ValueError| BadRequest[400<br/>输入或阈值不合法]
+    Kind -->|请求超过 16 MB| TooLarge[413<br/>图片过大]
+    Kind -->|模型下载/加载失败| Unavailable[503<br/>模型资源不可用]
+    Kind -->|依赖未安装| Dependency[503<br/>提示安装 requirements]
+    Kind -->|数据或权重不存在| Missing[503<br/>提示检查项目资源]
+    Kind -->|其他未预期异常| Internal[记录完整日志<br/>返回通用 500]
+    BadRequest --> Safe[仅返回可操作信息]
+    TooLarge --> Safe
+    Unavailable --> Safe
+    Dependency --> Safe
+    Missing --> Safe
+    Internal --> Safe
+```
+
+状态码表达责任归属：400 和 413 表示当前请求不符合要求；503 表示服务依赖的模型或资源暂时不可用；500 表示服务内部出现未预期问题。正确状态码既帮助前端显示合适提示，也便于日志和监控统计。
 
 ### 9.3 为什么要清理上传文件
 
@@ -412,6 +652,55 @@ detections = detector.detect(image_path, conf_threshold=threshold)
 `web_app.py` 目前是应用协调中心，但具体职责已经拆到不同模块：模型加载在 `model_loader.py`，检测抽象在 `object_detector.py`，绘图在 `preprocess.py`。这种拆分让代码更容易阅读和替换。
 
 严格来说，`web_app.py` 仍然承担较多编排职责，后续可以继续拆分成 `services`、`routes`、`schemas` 和 `config`，但对于当前课堂项目，这样的模块边界已经能体现基本的单一职责意识。
+
+类之间的关系可以用简化类图表示：
+
+```mermaid
+classDiagram
+    class ModelLoader {
+        <<abstract>>
+        +load_model() nn.Module
+    }
+    class MobileNetV3Loader {
+        +load_model() nn.Module
+    }
+    class ResNet18Loader {
+        +load_model() nn.Module
+    }
+    class FineTunedLoader {
+        -Path model_path
+        -int num_classes
+        -bool freeze_features
+        +load_model() nn.Module
+    }
+    ModelLoader <|-- MobileNetV3Loader
+    ModelLoader <|-- ResNet18Loader
+    ModelLoader <|-- FineTunedLoader
+
+    class ObjectDetector {
+        <<abstract>>
+        +detect(image_path, conf_threshold) DetectionResult[]
+    }
+    class YOLOv8Detector {
+        -str model_path
+        -float default_conf_threshold
+        -YOLO model
+        +detect(image_path, conf_threshold) DetectionResult[]
+    }
+    class DetectionResult {
+        +float x1
+        +float y1
+        +float x2
+        +float y2
+        +str label
+        +float confidence
+        +to_dict() dict
+    }
+    ObjectDetector <|-- YOLOv8Detector
+    YOLOv8Detector --> DetectionResult : creates
+```
+
+这张图也解释了“实例”和“值对象”的差别。`YOLOv8Detector` 实例具有行为和长期状态，持有可复用模型并执行 `detect()`；`DetectionResult` 主要表达一次检测得到的数据值，创建后被冻结。并不是所有对象都应该是值对象，也不是值对象不能有任何方法；`to_dict()` 是围绕值本身的转换行为，不会重新做模型推理。
 
 ## 十一、前端页面与用户体验
 
@@ -502,6 +791,31 @@ Flask 的 `test_client()` 可以在不启动真实浏览器的情况下访问 `/
 
 真正的模型质量还需要独立的评估脚本，计算 accuracy、precision、recall、F1、混淆矩阵，以及检测任务的 precision、recall 和 mAP。接口测试只能证明系统能运行，不能证明模型一定准确。
 
+### 13.5 测试金字塔与证据链
+
+```mermaid
+flowchart TB
+    Browser[浏览器端到端<br/>按钮、拖拽、滑块、响应式布局]
+    RealHTTP[真实 HTTP 冒烟<br/>真实模型、真实权重、静态图片]
+    Integration[Flask 集成测试<br/>路由、JSON、状态码、Mock 模型]
+    Unit[单元测试<br/>阈值、离线加载参数、状态函数]
+    Static[环境与静态检查<br/>依赖、语法、路径、资产]
+    Static --> Unit --> Integration --> RealHTTP --> Browser
+```
+
+每一层回答不同问题：
+
+| 测试层 | 能证明什么 | 不能证明什么 |
+| --- | --- | --- |
+| 环境检查 | 包能导入、关键文件存在 | 模型预测是否正确 |
+| 单元测试 | 小函数和加载参数符合预期 | 模块组合后是否工作 |
+| Mock 接口测试 | 路由、状态码、JSON 契约正确 | 真实权重是否可加载 |
+| 真实 HTTP | 服务与真实模型能形成闭环 | 所有浏览器交互是否正确 |
+| 浏览器端到端 | 用户按钮、上传、切换和展示可用 | 大规模模型准确率 |
+| 验证集评估 | 模型在固定数据上的指标 | 生产环境全部分布表现 |
+
+当前项目已验证 9 项自动化测试、真实首页与两个接口、浏览器分类和检测流程。分类模型另由 `scripts/evaluate_classifier.py` 在 1,478 张验证图片上评估。把这些证据一起陈述，才比一句“我测试过了”更可信。
+
 ## 十四、性能与工程优化
 
 ### 14.1 已完成的优化
@@ -528,6 +842,18 @@ Flask 的 `test_client()` 可以在不启动真实浏览器的情况下访问 `/
 
 但是这些改动不能全部一次加入课堂项目。工程设计要考虑目标。当前目标是可教学、可复现和可展示，因此保持结构清楚比提前引入复杂基础设施更重要。
 
+生产演进可以分阶段进行：
+
+```mermaid
+flowchart LR
+    P0[阶段 0<br/>本地 Flask 演示] --> P1[阶段 1<br/>生产 WSGI + 配置分离]
+    P1 --> P2[阶段 2<br/>对象存储 + 数据库 + 认证]
+    P2 --> P3[阶段 3<br/>独立 GPU 推理服务 + 队列]
+    P3 --> P4[阶段 4<br/>模型注册、灰度、监控与回滚]
+```
+
+阶段 1 先解决开发服务器、日志、环境变量和健康检查；阶段 2 解决多用户、图片生命周期和权限；阶段 3 解决长耗时推理、并发和资源隔离；阶段 4 解决模型版本治理与线上质量。面试中这样分阶段比一次性罗列 Docker、Kubernetes、Redis 更专业，因为每项基础设施都对应具体问题。
+
 ## 十五、项目局限与诚实回答方式
 
 面试官通常更信任能主动说出局限的人。当前项目至少有以下限制：
@@ -538,8 +864,29 @@ Flask 的 `test_client()` 可以在不启动真实浏览器的情况下访问 `/
 4. 当前 YOLO 主要用于通用目标检测，检测到 cat 不代表能识别具体猫品种。
 5. 当前使用 Flask 开发服务器，只适用于本地演示。
 6. 当前上传文件清理策略是本地临时文件策略，不是完整的生产隐私方案。
-7. 当前测试主要覆盖环境和接口闭环，模型准确率评估还应该进一步补充。
+7. 分类模型已有 1,478 张验证图片上的 Top-1 评估，但还没有提交混淆矩阵、precision、recall、F1 和置信度校准报告；通用 YOLO 也没有针对本项目场景建立专门检测评估集。
 8. 页面和部分前端逻辑仍集中在一个模板文件中，后续可以拆分静态资源。
+
+### 15.1 模型能力边界图
+
+```mermaid
+flowchart TD
+    Input[输入图片] --> Task{用户选择任务}
+    Task -->|图像分类| Closed[37 类封闭集分类]
+    Closed --> Known{是否属于训练分布}
+    Known -->|较接近| Breed[返回最相似品种 Top-3]
+    Known -->|无关图片或新类别| Forced[仍会被迫分配到 37 类之一]
+
+    Task -->|目标检测| Generic[YOLOv8n 通用检测]
+    Generic --> COCO{是否属于预训练通用类别且足够清晰}
+    COCO -->|是| Box[返回类别、分数和位置]
+    COCO -->|否| Empty[可能无结果或误检]
+
+    Breed --> Limit[不能据此声称支持独立毛色分类]
+    Box --> Limit2[检测到 cat 不等于识别具体猫品种]
+```
+
+项目边界不是缺点清单，而是模型与数据定义的直接结果。封闭集分类器没有 unknown 输出；通用检测器没有本项目自定义品种类别；Oxford-IIIT Pet 没有金渐层、银渐层和蓝猫的独立毛色标注。改进必须从任务定义和数据标签开始，而不是只改前端文案或 Top-K 数字。
 
 如果面试官问“这个项目还有什么不足”，不要只说“没有不足”。可以回答：
 
